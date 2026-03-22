@@ -14,6 +14,9 @@ interface ProjectGridProps {
 export default function ProjectGrid({ projects, tags }: ProjectGridProps) {
   const [activeTags, setActiveTags] = useState<string[]>([]);
 
+  // 페이지 로드 시 1회 랜덤 셔플
+  const [shuffled] = useState(() => [...projects].sort(() => Math.random() - 0.5));
+
   const handleToggle = (tag: string) => {
     setActiveTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
@@ -23,9 +26,9 @@ export default function ProjectGrid({ projects, tags }: ProjectGridProps) {
   const handleClear = () => setActiveTags([]);
 
   const filtered = useMemo(() => {
-    if (activeTags.length === 0) return projects;
-    return projects.filter((p) => activeTags.some((tag) => p.tags.includes(tag)));
-  }, [projects, activeTags]);
+    if (activeTags.length === 0) return shuffled;
+    return shuffled.filter((p) => activeTags.some((tag) => p.tags.includes(tag)));
+  }, [shuffled, activeTags]);
 
   return (
     <div>
