@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import type { TagCount } from '@/lib/types';
 
 interface TagFilterProps {
@@ -9,32 +10,27 @@ interface TagFilterProps {
   onClear: () => void;
 }
 
-export default function TagFilter({
-  tags,
-  activeTags,
-  onToggle,
-  onClear,
-}: TagFilterProps) {
+export default function TagFilter({ tags, activeTags, onToggle, onClear }: TagFilterProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {/* 전체 보기 버튼 */}
-      <button
+      <motion.button
+        whileTap={{ scale: 0.96 }}
         onClick={onClear}
         className={`tag-chip ${activeTags.length === 0 ? 'active' : ''}`}
       >
         전체
-      </button>
+      </motion.button>
 
-      {/* 태그 목록 */}
       {tags.map(({ tag, count }) => (
-        <button
+        <motion.button
           key={tag}
+          whileTap={{ scale: 0.96 }}
           onClick={() => onToggle(tag)}
           className={`tag-chip ${activeTags.includes(tag) ? 'active' : ''}`}
         >
           {tag}
           <span className="ml-1 text-xs opacity-60">{count}</span>
-        </button>
+        </motion.button>
       ))}
     </div>
   );

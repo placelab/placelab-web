@@ -7,7 +7,7 @@ interface ProjectCardProps {
 
 export default function ProjectCard({ project }: ProjectCardProps) {
   return (
-    <article className="project-card fade-in">
+    <article className="project-card group fade-in">
       {/* 썸네일 */}
       <div className="relative aspect-[4/3] bg-lab-200 overflow-hidden rounded-sm">
         <Image

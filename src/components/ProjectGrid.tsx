@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { ProjectData, TagCount } from '@/lib/types';
 import TagFilter from './TagFilter';
 import ProjectCard from './ProjectCard';
@@ -13,7 +14,6 @@ interface ProjectGridProps {
 export default function ProjectGrid({ projects, tags }: ProjectGridProps) {
   const [activeTags, setActiveTags] = useState<string[]>([]);
 
-  // 태그 토글
   const handleToggle = (tag: string) => {
     setActiveTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
@@ -22,60 +22,47 @@ export default function ProjectGrid({ projects, tags }: ProjectGridProps) {
 
   const handleClear = () => setActiveTags([]);
 
-  // 필터링된 프로젝트
   const filtered = useMemo(() => {
     if (activeTags.length === 0) return projects;
-    return projects.filter((p) =>
-      activeTags.some((tag) => p.tags.includes(tag))
-    );
+    return projects.filter((p) => activeTags.some((tag) => p.tags.includes(tag)));
   }, [projects, activeTags]);
 
   return (
     <div>
       {/* 태그 필터 */}
       <div className="mb-10">
-        <TagFilter
-          tags={tags}
-          activeTags={activeTags}
-          onToggle={handleToggle}
-          onClear={handleClear}
-        />
+        <TagFilter tags={tags} activeTags={activeTags} onToggle={handleToggle} onClear={handleClear} />
       </div>
 
       {/* 결과 카운트 */}
       <p className="mb-6 text-sm text-lab-400 font-mono">
         {filtered.length}개 프로젝트
         {activeTags.length > 0 && (
-          <span>
-            {' '}
-            · 필터:{' '}
-            {activeTags.map((t, i) => (
-              <span key={t}>
-                {i > 0 && ', '}
-                {t}
-              </span>
-            ))}
-          </span>
+          <span> · 필터: {activeTags.join(', ')}</span>
         )}
       </p>
 
       {/* 프로젝트 그리드 */}
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-projects gap-8">
-          {filtered.map((project, index) => (
-            <div
-              key={project.slug}
-              className={`fade-in stagger-${Math.min(index + 1, 6)}`}
-            >
-              <ProjectCard project={project} />
-            </div>
-          ))}
-        </div>
+        <motion.div layout className="grid grid-cols-projects gap-8">
+          <AnimatePresence mode="popLayout">
+            {filtered.map((project) => (
+              <motion.div
+                key={`${project.category}-${project.slug}`}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ProjectCard project={project} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
       ) : (
         <div className="py-20 text-center">
-          <p className="text-lab-400">
-            선택한 태그에 해당하는 프로젝트가 없습니다.
-          </p>
+          <p className="text-lab-400">선택한 태그에 해당하는 프로젝트가 없습니다.</p>
           <button
             onClick={handleClear}
             className="mt-3 text-sm text-accent underline underline-offset-4"

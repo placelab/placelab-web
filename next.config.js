@@ -1,17 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-
-  // GitHub Pages: 레포지토리명에 맞게 수정
-  // 예) https://username.github.io/urban-lab-web/
-  basePath: process.env.NODE_ENV === 'production' ? '/urban-lab-web' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/urban-lab-web/' : '',
-
+  // Vercel 서버사이드 렌더링 (static export 제거)
   images: {
-    unoptimized: true, // GitHub Pages는 Next.js Image Optimization 미지원
+    // 같은 도메인의 /api/image 프록시 사용
+    remotePatterns: [],
   },
-
-  trailingSlash: true, // GitHub Pages 호환성
 };
 
 module.exports = nextConfig;
