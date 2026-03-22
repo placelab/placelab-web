@@ -242,16 +242,18 @@ export async function getMembers(): Promise<{ professors: MemberData[]; research
   const labIntroFile = professorFiles.find(f => /placelab\.docx$/i.test(f.split('/').pop() ?? ''));
   const labIntro = labIntroFile ? await parseDocx(labIntroFile) : '';
 
-  // profile.docx에서 bio 추출 (bio.json 없을 때)
+  // Profile.docx → 교수 소개 (항상 우선)
   const profDocxFile = professorFiles.find(f => /profile.*\.docx$/i.test(f.split('/').pop() ?? ''));
-  const profDocxText = (!profBio?.bio && profDocxFile) ? await parseDocx(profDocxFile) : '';
+  const profDocxHtml = profDocxFile ? await parseDocx(profDocxFile) : '';
 
   const professor: MemberData = {
     name: profBio?.name ?? profNameFromFile ?? '교수',
     role: 'professor',
     photo: profImageFile ? imageProxyUrl(profImageFile) : '',
-    bio: profBio?.bio ?? profDocxText,
+    bio: profDocxHtml || profBio?.bio || '',
     ...profBio,
+    // Profile.docx가 있으면 bio 덮어씌움
+    ...(profDocxHtml ? { bio: profDocxHtml } : {}),
   };
 
   // ── 연구원: /Members/Researchers/ 안에 서브폴더 ──

@@ -4,7 +4,7 @@ import { getMembers } from '@/lib/dropbox';
 export const revalidate = 3600;
 
 export default async function AboutPage() {
-  const { researchers, labIntro } = await getMembers();
+  const { professors, researchers, labIntro } = await getMembers();
 
   return (
     <section>
@@ -18,6 +18,36 @@ export default async function AboutPage() {
           />
         )}
 
+
+        {/* ─── 교수 섹션 ─── */}
+        {professors.map((prof) => (
+          <div key={prof.name} className="mb-16">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
+              <div className="lg:col-span-3">
+                <div className="relative aspect-[3/4] bg-lab-200 rounded-sm overflow-hidden">
+                  {prof.photo && (
+                    <Image
+                      src={prof.photo}
+                      alt={prof.name}
+                      fill
+                      unoptimized
+                      className="object-cover"
+                      sizes="(max-width: 1024px) 100vw, 25vw"
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="lg:col-span-9">
+                {prof.bio && (
+                  <div
+                    className="prose prose-sm prose-stone max-w-none"
+                    dangerouslySetInnerHTML={{ __html: prof.bio }}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
 
         {/* ─── 연구원 섹션 ─── */}
         {researchers.length > 0 && (
