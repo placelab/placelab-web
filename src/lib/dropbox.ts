@@ -1,3 +1,4 @@
+import mammoth from 'mammoth';
 import type { ProjectData, MemberData, NewsItem, TagCount } from './types';
 
 const API_BASE = 'https://api.dropboxapi.com/2';
@@ -46,6 +47,31 @@ async function dbxDownload(path: string): Promise<string> {
   });
   if (!res.ok) throw new Error(`Dropbox download failed for ${path} (${res.status})`);
   return res.text();
+}
+
+async function dbxDownloadBuffer(path: string): Promise<Buffer> {
+  const res = await fetch(`${CONTENT_BASE}/files/download`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+      'Dropbox-API-Arg': toAsciiHeader({ path }),
+    },
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) throw new Error(`Dropbox download failed for ${path} (${res.status})`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
+/** .docx 파일을 다운로드하여 텍스트 추출 */
+export async function parseDocx(path: string): Promise<string> {
+  try {
+    const buffer = await dbxDownloadBuffer(path);
+    const result = await mammoth.extractRawText({ buffer });
+    return result.value.trim();
+  } catch (e) {
+    console.error('parseDocx error for', path, e);
+    return '';
+  }
 }
 
 export async function listFolders(path: string): Promise<string[]> {
@@ -152,7 +178,7 @@ export async function getAllProjects(): Promise<ProjectData[]> {
 export async function getProjectWithGallery(
   category: 'research' | 'design',
   slug: string
-): Promise<{ project: ProjectData; gallery: string[] } | null> {
+): Promise<{ project: ProjectData; gallery: string[]; abstract: string } | null> {
   const folderName = category === 'research' ? 'Research' : 'Design';
   // 폴더 목록에서 slug에 맞는 폴더 찾기
   const folders = await listFolders(`/Projects/${folderName}`);
@@ -190,7 +216,11 @@ export async function getProjectWithGallery(
     ...galleryFiles.map(f => imageProxyUrl(f)),
   ];
 
-  return { project, gallery };
+  // 00-abstract.docx 텍스트 추출
+  const abstractFile = files.find(f => /00-abstract\.docx$/i.test(f.split('/').pop() ?? ''));
+  const abstract = abstractFile ? await parseDocx(abstractFile) : '';
+
+  return { project, gallery, abstract };
 }
 
 // ─── 구성원 ────────────────────────────────────────────
@@ -208,10 +238,15 @@ export async function getMembers(): Promise<{ professors: MemberData[]; research
     profNameFromFile = filename.replace(/^[a-zA-Z_]+/, '').replace(/[-_\s]+$/, '').trim();
   }
 
+  // .docx에서 bio 추출 (bio.json 없을 때)
+  const profDocxFile = professorFiles.find(f => /profile.*\.docx$/i.test(f.split('/').pop() ?? ''));
+  const profDocxText = (!profBio?.bio && profDocxFile) ? await parseDocx(profDocxFile) : '';
+
   const professor: MemberData = {
     name: profBio?.name ?? profNameFromFile ?? '교수',
     role: 'professor',
     photo: profImageFile ? imageProxyUrl(profImageFile) : '',
+    bio: profBio?.bio ?? profDocxText,
     ...profBio,
   };
 

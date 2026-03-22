@@ -17,7 +17,7 @@ export default async function ProjectPage({ params }: Props) {
   const result = await getProjectWithGallery(category, slug);
   if (!result) notFound();
 
-  const { project, gallery } = result;
+  const { project, gallery, abstract } = result;
 
   return (
     <div className="section-wrapper pt-28 pb-24">
@@ -31,50 +31,63 @@ export default async function ProjectPage({ params }: Props) {
 
       {/* 제목 */}
       <div className="max-w-3xl mb-12">
-        <p className="text-xs font-mono text-lab-400 uppercase tracking-widest mb-3">
-          {category}
-        </p>
         <h1 className="text-4xl md:text-5xl font-display font-semibold text-lab-900 leading-tight">
           {project.title}
         </h1>
         {project.subtitle && (
           <p className="mt-3 text-lg text-lab-500">{project.subtitle}</p>
         )}
-        <div className="mt-4 flex items-center gap-4">
-          <span className="text-sm font-mono text-lab-400">{project.year}</span>
-          {project.tags.map(tag => (
-            <span key={tag} className="text-xs px-2 py-0.5 bg-lab-100 text-lab-500 rounded-full">
-              {tag}
-            </span>
-          ))}
-        </div>
-        {project.description && (
-          <p className="mt-8 text-base text-lab-700 leading-relaxed">
-            {project.description}
-          </p>
+        {project.tags.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {project.tags.map(tag => (
+              <span key={tag} className="text-xs px-2 py-0.5 bg-lab-100 text-lab-500 rounded-full">
+                {tag}
+              </span>
+            ))}
+          </div>
         )}
       </div>
 
-      {/* 이미지 스크롤 */}
-      <div className="space-y-4">
-        {gallery.map((src, i) => (
-          <div key={i} className="relative w-full bg-lab-100 rounded-sm overflow-hidden">
-            <Image
-              src={src}
-              alt={`${project.title} ${i + 1}`}
-              width={1600}
-              height={900}
-              unoptimized
-              className="w-full h-auto object-contain"
-              style={{ maxHeight: '90vh' }}
-            />
-          </div>
-        ))}
-      </div>
+      {/* 메인 이미지 */}
+      {gallery[0] && (
+        <div className="relative w-full bg-lab-100 rounded-sm overflow-hidden mb-10">
+          <Image
+            src={gallery[0]}
+            alt={project.title}
+            width={1600}
+            height={900}
+            unoptimized
+            className="w-full h-auto object-contain"
+            style={{ maxHeight: '90vh' }}
+          />
+        </div>
+      )}
 
-      {gallery.length === 0 && (
-        <div className="py-20 text-center">
-          <p className="text-lab-400 text-sm">이미지가 없습니다.</p>
+      {/* Abstract (00-abstract.docx 내용) */}
+      {abstract && (
+        <div className="max-w-3xl mb-12">
+          <p className="text-base text-lab-700 leading-relaxed whitespace-pre-line">
+            {abstract}
+          </p>
+        </div>
+      )}
+
+      {/* 나머지 갤러리 이미지 */}
+      {gallery.length > 1 && (
+        <div className="space-y-4">
+          {gallery.slice(1).map((src, i) => (
+            <div key={i} className="relative w-full bg-lab-100 rounded-sm overflow-hidden">
+              <Image
+                src={src}
+                alt={`${project.title} ${i + 2}`}
+                width={1600}
+                height={900}
+                unoptimized
+                className="w-full h-auto object-contain"
+                style={{ maxHeight: '90vh' }}
+              />
+            </div>
+          ))}
         </div>
       )}
     </div>

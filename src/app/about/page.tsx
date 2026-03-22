@@ -8,19 +8,9 @@ export default async function AboutPage() {
 
   return (
     <section>
-      <div className="section-wrapper page-header">
-        <p className="text-sm font-mono text-lab-400 uppercase tracking-widest mb-4 fade-in">
-          About
-        </p>
-        <h1 className="fade-in stagger-1">연구실 소개</h1>
-        <p className="fade-in stagger-2">
-          장소와 사람의 관계를 탐구합니다.
-        </p>
-      </div>
-
       {/* ─── 교수 섹션 ─── */}
       {professors.map((prof) => (
-        <div key={prof.name} className="section-wrapper pb-20">
+        <div key={prof.name} className="section-wrapper pt-24 pb-20">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
             <div className="lg:col-span-4">
               <div className="relative aspect-[3/4] bg-lab-200 rounded-sm overflow-hidden">
