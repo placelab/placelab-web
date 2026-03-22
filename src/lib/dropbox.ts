@@ -148,6 +148,51 @@ export async function getAllProjects(): Promise<ProjectData[]> {
   return [...research, ...design].sort((a, b) => b.year - a.year);
 }
 
+/** 단일 프로젝트 + 갤러리 이미지 전체 반환 */
+export async function getProjectWithGallery(
+  category: 'research' | 'design',
+  slug: string
+): Promise<{ project: ProjectData; gallery: string[] } | null> {
+  const folderName = category === 'research' ? 'Research' : 'Design';
+  // 폴더 목록에서 slug에 맞는 폴더 찾기
+  const folders = await listFolders(`/Projects/${folderName}`);
+  const folderPath = folders.find(f => {
+    const rawName = f.split('/').pop() ?? '';
+    const s = rawName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9가-힣-]/g, '') || rawName;
+    return s === slug || rawName === slug;
+  });
+  if (!folderPath) return null;
+
+  const rawName = folderPath.split('/').pop() ?? '';
+  const info = await downloadJson<Partial<Omit<ProjectData, 'slug' | 'category'>>>(`${folderPath}/info.json`);
+  const orderMatch = rawName.match(/^(\d+)[.\s]/);
+
+  const files = await listFiles(folderPath);
+  const imageFiles = files.filter(f => /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f));
+  const mainImage = imageFiles.find(f => f.includes('00-main')) ?? imageFiles[0] ?? '';
+  // 갤러리: 메인 이미지 제외한 나머지
+  const galleryFiles = imageFiles.filter(f => f !== mainImage);
+
+  const project: ProjectData = {
+    slug,
+    category,
+    title: info?.title ?? rawName.replace(/^\d+[.\s]/, '').trim(),
+    subtitle: info?.subtitle,
+    description: info?.description ?? '',
+    year: info?.year ?? new Date().getFullYear(),
+    tags: info?.tags ?? [],
+    thumbnail: mainImage ? imageProxyUrl(mainImage) : '',
+    order: info?.order ?? (orderMatch ? parseInt(orderMatch[1]) : 999),
+  };
+
+  const gallery = [
+    ...(mainImage ? [imageProxyUrl(mainImage)] : []),
+    ...galleryFiles.map(f => imageProxyUrl(f)),
+  ];
+
+  return { project, gallery };
+}
+
 // ─── 구성원 ────────────────────────────────────────────
 
 export async function getMembers(): Promise<{ professors: MemberData[]; researchers: MemberData[] }> {

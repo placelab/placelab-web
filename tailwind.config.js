@@ -38,7 +38,7 @@ module.exports = {
         'content': '1280px',
       },
       gridTemplateColumns: {
-        'projects': 'repeat(auto-fill, minmax(320px, 1fr))',
+        'projects': 'repeat(auto-fill, minmax(220px, 1fr))',
       },
     },
   },

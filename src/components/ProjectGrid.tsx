@@ -44,7 +44,7 @@ export default function ProjectGrid({ projects, tags }: ProjectGridProps) {
 
       {/* 프로젝트 그리드 */}
       {filtered.length > 0 ? (
-        <motion.div layout className="grid grid-cols-projects gap-8">
+        <motion.div layout className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
           <AnimatePresence mode="popLayout">
             {filtered.map((project) => (
               <motion.div
