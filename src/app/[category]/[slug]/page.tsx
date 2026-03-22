@@ -14,6 +14,38 @@ interface Props {
   params: { category: string; slug: string };
 }
 
+function isPdf(src: string) {
+  return src.toLowerCase().includes('.pdf') || src.includes('path=') && decodeURIComponent(src).toLowerCase().includes('.pdf');
+}
+
+function GalleryItem({ src, alt }: { src: string; alt: string }) {
+  if (isPdf(src)) {
+    return (
+      <div className="w-full bg-lab-100 rounded-sm overflow-hidden">
+        <iframe
+          src={src}
+          title={alt}
+          className="w-full"
+          style={{ height: '90vh', border: 'none' }}
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="relative w-full bg-lab-100 rounded-sm overflow-hidden">
+      <Image
+        src={src}
+        alt={alt}
+        width={1600}
+        height={900}
+        unoptimized
+        className="w-full h-auto object-contain"
+        style={{ maxHeight: '90vh' }}
+      />
+    </div>
+  );
+}
+
 export default async function ProjectPage({ params }: Props) {
   const { category, slug } = params;
 
@@ -53,22 +85,14 @@ export default async function ProjectPage({ params }: Props) {
         )}
       </div>
 
-      {/* 메인 이미지 */}
+      {/* 메인 이미지/PDF */}
       {gallery[0] && (
-        <div className="relative w-full bg-lab-100 rounded-sm overflow-hidden mb-10">
-          <Image
-            src={gallery[0]}
-            alt={project.title}
-            width={1600}
-            height={900}
-            unoptimized
-            className="w-full h-auto object-contain"
-            style={{ maxHeight: '90vh' }}
-          />
+        <div className="mb-10">
+          <GalleryItem src={gallery[0]} alt={project.title} />
         </div>
       )}
 
-      {/* Abstract (00-abstract.docx 내용) */}
+      {/* Abstract */}
       {abstract && (
         <div
           className="max-w-3xl mb-12 prose prose-sm prose-stone max-w-none"
@@ -76,21 +100,11 @@ export default async function ProjectPage({ params }: Props) {
         />
       )}
 
-      {/* 나머지 갤러리 이미지 */}
+      {/* 나머지 갤러리 */}
       {gallery.length > 1 && (
         <div className="space-y-4">
           {gallery.slice(1).map((src, i) => (
-            <div key={i} className="relative w-full bg-lab-100 rounded-sm overflow-hidden">
-              <Image
-                src={src}
-                alt={`${project.title} ${i + 2}`}
-                width={1600}
-                height={900}
-                unoptimized
-                className="w-full h-auto object-contain"
-                style={{ maxHeight: '90vh' }}
-              />
-            </div>
+            <GalleryItem key={i} src={src} alt={`${project.title} ${i + 2}`} />
           ))}
         </div>
       )}
