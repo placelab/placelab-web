@@ -195,10 +195,9 @@ export async function getProjectWithGallery(
 
   const files = await listFiles(folderPath);
   const imageFiles = files.filter(f => /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f));
-  const pdfFiles  = files.filter(f => /\.pdf$/i.test(f.split('/').pop() ?? ''));
-
   const mainImage = imageFiles.find(f => f.includes('00-main')) ?? imageFiles[0] ?? '';
-  const galleryImages = imageFiles.filter(f => f !== mainImage);
+  // 갤러리: 메인 이미지 제외한 나머지
+  const galleryFiles = imageFiles.filter(f => f !== mainImage);
 
   const project: ProjectData = {
     slug,
@@ -212,11 +211,9 @@ export async function getProjectWithGallery(
     order: info?.order ?? (orderMatch ? parseInt(orderMatch[1]) : 999),
   };
 
-  // 갤러리: 메인 이미지 → 나머지 이미지 → PDF 순
   const gallery = [
     ...(mainImage ? [imageProxyUrl(mainImage)] : []),
-    ...galleryImages.map(f => imageProxyUrl(f)),
-    ...pdfFiles.map(f => imageProxyUrl(f)),
+    ...galleryFiles.map(f => imageProxyUrl(f)),
   ];
 
   // 00-abstract.docx 텍스트 추출
