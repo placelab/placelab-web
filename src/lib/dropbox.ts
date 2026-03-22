@@ -225,7 +225,7 @@ export async function getProjectWithGallery(
 
 // ─── 구성원 ────────────────────────────────────────────
 
-export async function getMembers(): Promise<{ professors: MemberData[]; researchers: MemberData[] }> {
+export async function getMembers(): Promise<{ professors: MemberData[]; researchers: MemberData[]; labIntro: string }> {
   // ── 교수: /Members/Professor/ 안에 파일이 바로 있음 ──
   const professorFiles = await listFiles('/Members/Professor');
   const profImageFile = professorFiles.find(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f));
@@ -238,7 +238,11 @@ export async function getMembers(): Promise<{ professors: MemberData[]; research
     profNameFromFile = filename.replace(/^[a-zA-Z_]+/, '').replace(/[-_\s]+$/, '').trim();
   }
 
-  // .docx에서 bio 추출 (bio.json 없을 때)
+  // placelab.docx → 연구실 소개글
+  const labIntroFile = professorFiles.find(f => /placelab\.docx$/i.test(f.split('/').pop() ?? ''));
+  const labIntro = labIntroFile ? await parseDocx(labIntroFile) : '';
+
+  // profile.docx에서 bio 추출 (bio.json 없을 때)
   const profDocxFile = professorFiles.find(f => /profile.*\.docx$/i.test(f.split('/').pop() ?? ''));
   const profDocxText = (!profBio?.bio && profDocxFile) ? await parseDocx(profDocxFile) : '';
 
@@ -268,7 +272,7 @@ export async function getMembers(): Promise<{ professors: MemberData[]; research
     })
   );
 
-  return { professors: [professor], researchers };
+  return { professors: [professor], researchers, labIntro };
 }
 
 // ─── 소식 ────────────────────────────────────────────
