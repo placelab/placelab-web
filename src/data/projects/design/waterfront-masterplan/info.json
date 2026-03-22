@@ -1,0 +1,12 @@
+{
+  "title": "수변공간 마스터플랜",
+  "subtitle": "Waterfront Masterplan",
+  "description": "하천변 유휴 공간을 보행자 중심의 복합 문화공간으로 재편하는 마스터플랜. 수변 산책로, 커뮤니티 광장, 생태습지를 연계한 통합 설계안.",
+  "year": 2024,
+  "tags": ["도시설계", "수변공간", "마스터플랜"],
+  "thumbnail": "thumbnail.jpg",
+  "gallery": ["plan-01.jpg", "section-01.jpg", "render-01.jpg"],
+  "members": ["이석사", "최학부"],
+  "order": 1,
+  "visible": true
+}

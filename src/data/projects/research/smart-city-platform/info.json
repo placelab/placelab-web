@@ -1,0 +1,18 @@
+{
+  "title": "스마트시티 보행 플랫폼 연구",
+  "subtitle": "Smart City Pedestrian Platform",
+  "description": "도시 보행 환경의 실시간 데이터 수집과 분석을 통해 보행자 중심의 스마트시티 플랫폼을 구축하는 연구 프로젝트. IoT 센서 네트워크와 공간 분석 기법을 결합하여 보행 흐름을 시각화하고, 도시설계 의사결정을 지원하는 대시보드를 개발한다.",
+  "year": 2024,
+  "tags": ["스마트시티", "보행환경", "데이터분석"],
+  "thumbnail": "thumbnail.jpg",
+  "gallery": ["gallery-01.jpg", "gallery-02.jpg"],
+  "members": ["김연구", "이석사"],
+  "publications": [
+    "Kim et al. (2024). Pedestrian Flow Analysis in Smart City Context. Journal of Urban Technology."
+  ],
+  "links": [
+    { "label": "논문 보기", "url": "https://doi.org/example" }
+  ],
+  "order": 1,
+  "visible": true
+}

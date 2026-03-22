@@ -1,0 +1,12 @@
+{
+  "title": "도시재생 지역 보행 네트워크 분석",
+  "subtitle": "Pedestrian Network Analysis for Urban Regeneration",
+  "description": "쇠퇴 지역의 보행 네트워크를 공간구문론(Space Syntax)과 현장 조사를 통해 분석하고, 보행 활성화를 위한 도시설계 전략을 제안하는 연구.",
+  "year": 2023,
+  "tags": ["도시재생", "보행환경", "공간분석"],
+  "thumbnail": "thumbnail.jpg",
+  "gallery": [],
+  "members": ["박연구"],
+  "order": 2,
+  "visible": true
+}
