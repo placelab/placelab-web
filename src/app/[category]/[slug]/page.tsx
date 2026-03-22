@@ -70,11 +70,10 @@ export default async function ProjectPage({ params }: Props) {
 
       {/* Abstract (00-abstract.docx 내용) */}
       {abstract && (
-        <div className="max-w-3xl mb-12">
-          <p className="text-base text-lab-700 leading-[1.68] whitespace-pre-line">
-            {abstract}
-          </p>
-        </div>
+        <div
+          className="max-w-3xl mb-12 prose prose-sm prose-stone max-w-none"
+          dangerouslySetInnerHTML={{ __html: abstract }}
+        />
       )}
 
       {/* 나머지 갤러리 이미지 */}

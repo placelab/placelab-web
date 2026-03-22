@@ -73,6 +73,18 @@
   }
 }
 
+/* ─── Prose (docx HTML 렌더링) ─── */
+.prose {
+  --tw-prose-body: theme('colors.lab.700');
+  --tw-prose-headings: theme('colors.lab.900');
+  --tw-prose-bold: theme('colors.lab.900');
+  --tw-prose-links: theme('colors.lab.900');
+  --tw-prose-bullets: theme('colors.lab.400');
+  --tw-prose-hr: theme('colors.lab.200');
+  line-height: 1.68;
+  font-size: 0.9375rem;
+}
+
 /* ─── Utility Layer ─── */
 @layer utilities {
   .text-balance {

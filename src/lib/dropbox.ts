@@ -62,11 +62,11 @@ async function dbxDownloadBuffer(path: string): Promise<Buffer> {
   return Buffer.from(await res.arrayBuffer());
 }
 
-/** .docx 파일을 다운로드하여 텍스트 추출 */
+/** .docx 파일을 다운로드하여 HTML로 변환 (서식 보존) */
 export async function parseDocx(path: string): Promise<string> {
   try {
     const buffer = await dbxDownloadBuffer(path);
-    const result = await mammoth.extractRawText({ buffer });
+    const result = await mammoth.convertToHtml({ buffer });
     return result.value.trim();
   } catch (e) {
     console.error('parseDocx error for', path, e);

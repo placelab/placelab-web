@@ -39,9 +39,10 @@ export default async function AboutPage() {
               )}
 
               {prof.bio && (
-                <p className="mt-8 text-base text-lab-700 leading-[1.68] whitespace-pre-line">
-                  {prof.bio}
-                </p>
+                <div
+                  className="mt-8 prose prose-sm prose-stone max-w-none"
+                  dangerouslySetInnerHTML={{ __html: prof.bio }}
+                />
               )}
 
               {prof.research && prof.research.length > 0 && (
