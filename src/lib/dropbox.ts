@@ -16,7 +16,7 @@ function toAsciiHeader(obj: unknown): string {
   );
 }
 
-type DropboxEntry = { '.tag': string; path_lower: string };
+type DropboxEntry = { '.tag': string; path_lower: string; path_display: string };
 
 async function dbxPost(endpoint: string, body: unknown): Promise<{ entries: DropboxEntry[] }> {
   const res = await fetch(`${API_BASE}/${endpoint}`, {
@@ -51,7 +51,7 @@ async function dbxDownload(path: string): Promise<string> {
 export async function listFolders(path: string): Promise<string[]> {
   try {
     const data = await dbxPost('files/list_folder', { path });
-    return data.entries.filter(e => e['.tag'] === 'folder').map(e => e.path_lower);
+    return data.entries.filter(e => e['.tag'] === 'folder').map(e => e.path_display ?? e.path_lower);
   } catch (e) {
     console.error('listFolders error for', path, e);
     return [];
@@ -61,7 +61,7 @@ export async function listFolders(path: string): Promise<string[]> {
 export async function listFiles(path: string): Promise<string[]> {
   try {
     const data = await dbxPost('files/list_folder', { path });
-    return data.entries.filter(e => e['.tag'] === 'file').map(e => e.path_lower);
+    return data.entries.filter(e => e['.tag'] === 'file').map(e => e.path_display ?? e.path_lower);
   } catch (e) {
     console.error('listFiles error for', path, e);
     return [];

@@ -9,14 +9,7 @@ export default async function HomePage() {
 
   return (
     <section>
-      <div className="section-wrapper page-header">
-        <p className="text-sm font-mono text-lab-400 uppercase tracking-widest mb-4 fade-in">
-          PlaceLab
-        </p>
-        <h1 className="fade-in stagger-1">Projects</h1>
-      </div>
-
-      <div className="section-wrapper pb-24">
+      <div className="section-wrapper pt-24 pb-24">
         {projects.length > 0 ? (
           <ProjectGrid projects={projects} tags={tags} />
         ) : (

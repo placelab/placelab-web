@@ -10,17 +10,9 @@ interface TagFilterProps {
   onClear: () => void;
 }
 
-export default function TagFilter({ tags, activeTags, onToggle, onClear }: TagFilterProps) {
+export default function TagFilter({ tags, activeTags, onToggle }: TagFilterProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <motion.button
-        whileTap={{ scale: 0.96 }}
-        onClick={onClear}
-        className={`tag-chip ${activeTags.length === 0 ? 'active' : ''}`}
-      >
-        전체
-      </motion.button>
-
       {tags.map(({ tag, count }) => (
         <motion.button
           key={tag}

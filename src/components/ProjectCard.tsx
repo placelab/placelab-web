@@ -39,14 +39,9 @@ export default function ProjectCard({ project }: ProjectCardProps) {
 
         {/* 정보 */}
         <div className="pt-3 pb-2">
-          <div className="flex items-baseline justify-between gap-2">
-            <h3 className="font-sans text-sm font-semibold text-lab-900 leading-snug line-clamp-2">
-              {project.title}
-            </h3>
-            <span className="text-xs text-lab-400 font-mono shrink-0">
-              {project.year}
-            </span>
-          </div>
+          <h3 className="font-sans text-sm font-semibold text-lab-900 leading-snug line-clamp-2">
+            {project.title}
+          </h3>
 
           {project.tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
