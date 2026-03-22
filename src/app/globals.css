@@ -85,6 +85,13 @@
   font-size: 0.9375rem;
 }
 
+/* Word 단락(Enter) = 줄바꿈만, 단락 간격 없음 */
+.prose p,
+.prose :where(p):not(:where([class~="not-prose"] *)) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
 /* ─── Utility Layer ─── */
 @layer utilities {
   .text-balance {
