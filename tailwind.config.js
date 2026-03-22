@@ -40,6 +40,16 @@ module.exports = {
       gridTemplateColumns: {
         'projects': 'repeat(auto-fill, minmax(220px, 1fr))',
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            p: {
+              marginTop: '0',
+              marginBottom: '0',
+            },
+          },
+        },
+      },
     },
   },
   plugins: [require('@tailwindcss/typography')],
