@@ -66,7 +66,7 @@ export default async function ProjectPage({ params }: Props) {
       {/* Abstract (00-abstract.docx 내용) */}
       {abstract && (
         <div className="max-w-3xl mb-12">
-          <p className="text-base text-lab-700 leading-relaxed whitespace-pre-line">
+          <p className="text-base text-lab-700 leading-[1.2] whitespace-pre-line">
             {abstract}
           </p>
         </div>
