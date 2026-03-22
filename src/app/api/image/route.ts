@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.DROPBOX_ACCESS_TOKEN}`,
-        'Dropbox-API-Arg': JSON.stringify({ path }),
+        'Dropbox-API-Arg': JSON.stringify({ path }).replace(/[\u0080-\uFFFF]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`),
       },
     });
 

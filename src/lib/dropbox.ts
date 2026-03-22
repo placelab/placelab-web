@@ -9,6 +9,13 @@ function getToken(): string {
   return token;
 }
 
+/** HTTP 헤더에 사용하기 위해 non-ASCII(한글 등)를 유니코드 이스케이프 */
+function toAsciiHeader(obj: unknown): string {
+  return JSON.stringify(obj).replace(/[\u0080-\uFFFF]/g, (c) =>
+    `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`
+  );
+}
+
 type DropboxEntry = { '.tag': string; path_lower: string };
 
 async function dbxPost(endpoint: string, body: unknown): Promise<{ entries: DropboxEntry[] }> {
@@ -33,7 +40,7 @@ async function dbxDownload(path: string): Promise<string> {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${getToken()}`,
-      'Dropbox-API-Arg': JSON.stringify({ path }),
+      'Dropbox-API-Arg': toAsciiHeader({ path }),
     },
     next: { revalidate: 3600 },
   });
@@ -61,6 +68,15 @@ export async function listFiles(path: string): Promise<string[]> {
   }
 }
 
+/** 폴더에서 첫 번째 이미지 파일의 proxy URL 반환 (00-main.jpg 우선) */
+async function findThumbnail(folderPath: string): Promise<string> {
+  const files = await listFiles(folderPath);
+  const images = files.filter(f => /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f));
+  if (images.length === 0) return '';
+  const main = images.find(f => f.includes('00-main')) ?? images[0];
+  return imageProxyUrl(main);
+}
+
 export async function downloadJson<T>(path: string): Promise<T | null> {
   try {
     const text = await dbxDownload(path);
@@ -84,21 +100,44 @@ export async function getProjects(category: 'research' | 'design'): Promise<Proj
 
   const projects = await Promise.all(
     folders.map(async (folderPath) => {
-      const slug = folderPath.split('/').pop() ?? '';
-      const info = await downloadJson<Omit<ProjectData, 'slug' | 'category'>>(`${folderPath}/info.json`);
-      if (!info) return null;
+      const rawName = folderPath.split('/').pop() ?? '';
 
-      const thumbnail = info.thumbnail
+      // info.json이 있으면 우선 사용, 없으면 폴더 구조에서 자동 추출
+      const info = await downloadJson<Partial<Omit<ProjectData, 'slug' | 'category'>>>(`${folderPath}/info.json`);
+
+      const slug = rawName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9가-힣-]/g, '') || rawName;
+
+      // 순서: 숫자 접두사 추출 (예: "1.프로젝트" → 1)
+      const orderMatch = rawName.match(/^(\d+)[.\s]/);
+      const order = info?.order ?? (orderMatch ? parseInt(orderMatch[1]) : 999);
+
+      // 제목: 숫자 접두사 제거
+      const title = info?.title ?? rawName.replace(/^\d+[.\s]/, '').trim();
+
+      // 썸네일: info.json에 명시된 파일 또는 자동 탐지
+      const thumbnail = info?.thumbnail
         ? imageProxyUrl(`${folderPath}/${info.thumbnail}`)
-        : '';
+        : await findThumbnail(folderPath);
 
-      return { ...info, slug, category, thumbnail } as ProjectData;
+      return {
+        slug,
+        category,
+        title,
+        subtitle: info?.subtitle,
+        description: info?.description ?? '',
+        year: info?.year ?? new Date().getFullYear(),
+        tags: info?.tags ?? [],
+        thumbnail,
+        order,
+        visible: info?.visible !== false,
+      } as ProjectData;
     })
   );
 
+  // PDF 등 이미지 없는 항목 제외하지 않고, 숨김 항목만 제거
   return projects
-    .filter((p): p is ProjectData => p !== null && p.visible !== false)
-    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || b.year - a.year);
+    .filter(p => p.visible !== false)
+    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
 }
 
 export async function getAllProjects(): Promise<ProjectData[]> {
@@ -112,28 +151,44 @@ export async function getAllProjects(): Promise<ProjectData[]> {
 // ─── 구성원 ────────────────────────────────────────────
 
 export async function getMembers(): Promise<{ professors: MemberData[]; researchers: MemberData[] }> {
-  const [professorFolders, researcherFolders] = await Promise.all([
-    listFolders('/Members/Professor'),
-    listFolders('/Members/Researchers'),
-  ]);
+  // ── 교수: /Members/Professor/ 안에 파일이 바로 있음 ──
+  const professorFiles = await listFiles('/Members/Professor');
+  const profImageFile = professorFiles.find(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f));
+  const profBio = await downloadJson<Partial<MemberData>>('/Members/Professor/bio.json');
 
-  const parseMember = async (folderPath: string, defaultRole: MemberData['role']): Promise<MemberData> => {
-    const folderName = folderPath.split('/').pop()?.replace(/_/g, ' ') ?? '';
-    const bio = await downloadJson<Partial<MemberData>>(`${folderPath}/bio.json`);
-    return {
-      name: folderName,
-      role: defaultRole,
-      photo: imageProxyUrl(`${folderPath}/profile.jpg`),
-      ...bio,
-    };
+  // 파일명에서 이름 추출 (예: "m_이재민-.jpg" → "이재민")
+  let profNameFromFile = '';
+  if (profImageFile) {
+    const filename = profImageFile.split('/').pop()?.replace(/\.[^.]+$/, '') ?? '';
+    profNameFromFile = filename.replace(/^[a-zA-Z_]+/, '').replace(/[-_\s]+$/, '').trim();
+  }
+
+  const professor: MemberData = {
+    name: profBio?.name ?? profNameFromFile ?? '교수',
+    role: 'professor',
+    photo: profImageFile ? imageProxyUrl(profImageFile) : '',
+    ...profBio,
   };
 
-  const [professors, researchers] = await Promise.all([
-    Promise.all(professorFolders.map(f => parseMember(f, 'professor'))),
-    Promise.all(researcherFolders.map(f => parseMember(f, 'phd'))),
-  ]);
+  // ── 연구원: /Members/Researchers/ 안에 서브폴더 ──
+  const researcherFolders = await listFolders('/Members/Researchers');
+  const researchers = await Promise.all(
+    researcherFolders.map(async (folderPath) => {
+      const rawName = folderPath.split('/').pop() ?? '';
+      // 숫자 접두사 제거: "1.채지원" → "채지원"
+      const name = rawName.replace(/^\d+[.\s]/, '').trim();
+      const bio = await downloadJson<Partial<MemberData>>(`${folderPath}/bio.json`);
+      const photo = await findThumbnail(folderPath);
+      return {
+        name: bio?.name ?? name,
+        role: (bio?.role ?? 'phd') as MemberData['role'],
+        photo,
+        ...bio,
+      } as MemberData;
+    })
+  );
 
-  return { professors, researchers };
+  return { professors: [professor], researchers };
 }
 
 // ─── 소식 ────────────────────────────────────────────
