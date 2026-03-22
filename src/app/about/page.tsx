@@ -39,7 +39,7 @@ export default async function AboutPage() {
               )}
 
               {prof.bio && (
-                <p className="mt-8 text-base text-lab-700 leading-relaxed whitespace-pre-line">
+                <p className="mt-8 text-base text-lab-700 leading-[1.68] whitespace-pre-line">
                   {prof.bio}
                 </p>
               )}

@@ -23,7 +23,7 @@ export default function Header() {
           href="/"
           className="font-sans text-xl md:text-2xl font-semibold tracking-tight text-lab-900 hover:text-lab-700 transition-colors"
         >
-          PlaceLab
+          placeLab
         </Link>
 
         {/* 데스크탑 네비게이션 */}

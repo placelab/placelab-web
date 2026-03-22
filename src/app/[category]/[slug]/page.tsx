@@ -36,7 +36,7 @@ export default async function ProjectPage({ params }: Props) {
 
       {/* 제목 */}
       <div className="max-w-3xl mb-12">
-        <h1 className="text-4xl md:text-5xl font-sans font-semibold text-lab-900 leading-tight">
+        <h1 className="text-2xl md:text-3xl font-sans font-semibold text-lab-900 leading-tight">
           {project.title}
         </h1>
         {project.subtitle && (
