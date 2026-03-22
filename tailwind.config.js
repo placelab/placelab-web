@@ -7,7 +7,7 @@ module.exports = {
     extend: {
       fontFamily: {
         display: ['"Cormorant Garamond"', 'serif'],
-        sans: ['"Instrument Sans"', 'system-ui', 'sans-serif'],
+        sans: ['"Open Sans"', '"Noto Sans KR"', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {

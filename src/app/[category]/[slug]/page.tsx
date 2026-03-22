@@ -1,9 +1,14 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getProjectWithGallery } from '@/lib/dropbox';
+import { getProjectWithGallery, getAllProjects } from '@/lib/dropbox';
 
 export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  const projects = await getAllProjects();
+  return projects.map((p) => ({ category: p.category, slug: p.slug }));
+}
 
 interface Props {
   params: { category: string; slug: string };
@@ -17,7 +22,9 @@ export default async function ProjectPage({ params }: Props) {
   const result = await getProjectWithGallery(category, slug);
   if (!result) notFound();
 
-  const { project, gallery, abstract } = result;
+  const { project, gallery } = result;
+  // 여러 빈 줄을 단일 줄바꿈으로 정규화
+  const abstract = result.abstract.replace(/\n{2,}/g, '\n').trim();
 
   return (
     <div className="section-wrapper pt-28 pb-24">
