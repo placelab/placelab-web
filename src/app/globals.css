@@ -61,7 +61,7 @@
 
   /* 프로젝트 카드 호버 효과 */
   .project-card {
-    @apply group relative overflow-hidden rounded-sm;
+    @apply relative overflow-hidden rounded-sm;
   }
 
   .project-card img {
