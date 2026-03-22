@@ -21,7 +21,7 @@ export default function Header() {
         {/* 로고 */}
         <Link
           href="/"
-          className="font-display text-xl md:text-2xl font-semibold tracking-tight text-lab-900 hover:text-lab-700 transition-colors"
+          className="font-sans text-xl md:text-2xl font-semibold tracking-tight text-lab-900 hover:text-lab-700 transition-colors"
         >
           PlaceLab
         </Link>

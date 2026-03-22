@@ -22,9 +22,7 @@ export default async function ProjectPage({ params }: Props) {
   const result = await getProjectWithGallery(category, slug);
   if (!result) notFound();
 
-  const { project, gallery } = result;
-  // 여러 빈 줄을 단일 줄바꿈으로 정규화
-  const abstract = result.abstract.replace(/\n{2,}/g, '\n').trim();
+  const { project, gallery, abstract } = result;
 
   return (
     <div className="section-wrapper pt-28 pb-24">
@@ -38,7 +36,7 @@ export default async function ProjectPage({ params }: Props) {
 
       {/* 제목 */}
       <div className="max-w-3xl mb-12">
-        <h1 className="text-4xl md:text-5xl font-display font-semibold text-lab-900 leading-tight">
+        <h1 className="text-4xl md:text-5xl font-sans font-semibold text-lab-900 leading-tight">
           {project.title}
         </h1>
         {project.subtitle && (
@@ -73,7 +71,7 @@ export default async function ProjectPage({ params }: Props) {
       {/* Abstract (00-abstract.docx 내용) */}
       {abstract && (
         <div className="max-w-3xl mb-12">
-          <p className="text-base text-lab-700 leading-[1.2] whitespace-pre-line">
+          <p className="text-base text-lab-700 leading-[1.68] whitespace-pre-line">
             {abstract}
           </p>
         </div>

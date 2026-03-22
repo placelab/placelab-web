@@ -20,18 +20,22 @@ export default function InstagramFeed() {
 
   if (error) {
     return (
-      <div className="py-20 text-center text-lab-400 text-sm">
-        Instagram 피드를 불러올 수 없습니다.
+      <div className="py-20 text-center">
+        <p className="text-lab-400 text-sm mb-3">피드를 불러올 수 없습니다.</p>
+        <a
+          href="https://www.instagram.com/y_placelab/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-lab-700 underline underline-offset-4"
+        >
+          @y_placelab Instagram 바로가기
+        </a>
       </div>
     );
   }
 
   if (posts.length === 0) {
-    return (
-      <div className="py-20 text-center text-lab-400 text-sm">
-        불러오는 중...
-      </div>
-    );
+    return <div className="py-20 text-center text-lab-400 text-sm">불러오는 중...</div>;
   }
 
   return (
