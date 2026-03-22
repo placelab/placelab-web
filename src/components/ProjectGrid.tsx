@@ -34,17 +34,9 @@ export default function ProjectGrid({ projects, tags }: ProjectGridProps) {
         <TagFilter tags={tags} activeTags={activeTags} onToggle={handleToggle} onClear={handleClear} />
       </div>
 
-      {/* 결과 카운트 */}
-      <p className="mb-6 text-sm text-lab-400 font-mono">
-        {filtered.length}개 프로젝트
-        {activeTags.length > 0 && (
-          <span> · 필터: {activeTags.join(', ')}</span>
-        )}
-      </p>
-
       {/* 프로젝트 그리드 */}
       {filtered.length > 0 ? (
-        <motion.div layout className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+        <motion.div layout className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1.5 md:gap-2">
           <AnimatePresence mode="popLayout">
             {filtered.map((project) => (
               <motion.div

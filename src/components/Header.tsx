@@ -5,11 +5,10 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 const NAV_ITEMS = [
-  { href: '/', label: 'Home' },
   { href: '/about', label: 'About' },
-  { href: '/research', label: 'Research' },
-  { href: '/design', label: 'Design' },
-  { href: '/news', label: 'News' },
+  { href: '/research', label: 'R' },
+  { href: '/design', label: 'D' },
+  { href: '/news', label: 'N' },
 ];
 
 export default function Header() {
