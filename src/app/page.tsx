@@ -9,8 +9,8 @@ export default async function HomePage() {
   const projects = await getAllProjects();
   const tags = extractTags(projects);
 
-  const featured = projects.slice(0, 3);
-  const rest = projects.slice(3);
+  const featured = projects.slice(0, 5);
+  const rest = projects.slice(5);
 
   return (
     <section>
