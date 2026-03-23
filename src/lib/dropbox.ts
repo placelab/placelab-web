@@ -4,9 +4,42 @@ import type { ProjectData, MemberData, NewsItem, TagCount } from './types';
 const API_BASE = 'https://api.dropboxapi.com/2';
 const CONTENT_BASE = 'https://content.dropboxapi.com/2';
 
-function getToken(): string {
+// 메모리 캐시: 프로세스 재시작 전까지 재사용
+let _cachedToken: string | null = null;
+let _tokenExpiry = 0;
+
+/** Refresh Token으로 새 Access Token 자동 발급 */
+async function getToken(): Promise<string> {
+  // 1) 아직 유효한 토큰이 있으면 재사용
+  if (_cachedToken && Date.now() < _tokenExpiry) return _cachedToken;
+
+  const refreshToken = process.env.DROPBOX_REFRESH_TOKEN;
+  const appKey      = process.env.DROPBOX_APP_KEY;
+  const appSecret   = process.env.DROPBOX_APP_SECRET;
+
+  // 2) Refresh Token이 설정된 경우 → 자동 갱신
+  if (refreshToken && appKey && appSecret) {
+    const res = await fetch('https://api.dropboxapi.com/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type:    'refresh_token',
+        refresh_token: refreshToken,
+        client_id:     appKey,
+        client_secret: appSecret,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      _cachedToken = data.access_token as string;
+      _tokenExpiry = Date.now() + (data.expires_in as number) * 1000 - 60_000; // 1분 여유
+      return _cachedToken;
+    }
+  }
+
+  // 3) Fallback: 기존 DROPBOX_ACCESS_TOKEN
   const token = process.env.DROPBOX_ACCESS_TOKEN;
-  if (!token) throw new Error('DROPBOX_ACCESS_TOKEN is not set');
+  if (!token) throw new Error('Dropbox 토큰 미설정: DROPBOX_REFRESH_TOKEN 또는 DROPBOX_ACCESS_TOKEN 필요');
   return token;
 }
 
@@ -23,7 +56,7 @@ async function dbxPost(endpoint: string, body: unknown): Promise<{ entries: Drop
   const res = await fetch(`${API_BASE}/${endpoint}`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${getToken()}`,
+      Authorization: `Bearer ${await getToken()}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
@@ -40,7 +73,7 @@ async function dbxDownload(path: string): Promise<string> {
   const res = await fetch(`${CONTENT_BASE}/files/download`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${getToken()}`,
+      Authorization: `Bearer ${await getToken()}`,
       'Dropbox-API-Arg': toAsciiHeader({ path }),
     },
     next: { revalidate: 3600 },
@@ -53,7 +86,7 @@ async function dbxDownloadBuffer(path: string): Promise<Buffer> {
   const res = await fetch(`${CONTENT_BASE}/files/download`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${getToken()}`,
+      Authorization: `Bearer ${await getToken()}`,
       'Dropbox-API-Arg': toAsciiHeader({ path }),
     },
     next: { revalidate: 3600 },
