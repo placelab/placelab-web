@@ -164,7 +164,8 @@ export async function getProjects(category: 'research' | 'design'): Promise<Proj
       // info.json이 있으면 우선 사용, 없으면 폴더 구조에서 자동 추출
       const info = await downloadJson<Partial<Omit<ProjectData, 'slug' | 'category'>>>(`${folderPath}/info.json`);
 
-      const slug = rawName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9가-힣-]/g, '') || rawName;
+      const normName = rawName.normalize('NFC');
+      const slug = normName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9가-힣-]/g, '') || normName;
 
       // 순서: 숫자 접두사 추출 (예: "1.프로젝트" → 1)
       const orderMatch = rawName.match(/^(\d+)[.\s]/);
@@ -215,10 +216,12 @@ export async function getProjectWithGallery(
   const folderName = category === 'research' ? 'Research' : 'Design';
   // 폴더 목록에서 slug에 맞는 폴더 찾기
   const folders = await listFolders(`/Projects/${folderName}`);
+  const normSlug = slug.normalize('NFC');
   const folderPath = folders.find(f => {
     const rawName = f.split('/').pop() ?? '';
-    const s = rawName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9가-힣-]/g, '') || rawName;
-    return s === slug || rawName === slug;
+    const normRaw = rawName.normalize('NFC');
+    const s = normRaw.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9가-힣-]/g, '') || normRaw;
+    return s === normSlug || normRaw === normSlug;
   });
   if (!folderPath) return null;
 
