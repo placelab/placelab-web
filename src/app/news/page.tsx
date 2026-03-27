@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { getArchivedInstagramPosts } from '@/lib/dropbox';
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 interface BeholdPost {
   id: string;
