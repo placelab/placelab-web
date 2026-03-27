@@ -16,9 +16,11 @@ const ROLE_ORDER: Record<string, number> = {
 };
 
 function sortResearchers(members: MemberData[]): MemberData[] {
-  return [...members].sort(
-    (a, b) => (ROLE_ORDER[a.role] ?? 9) - (ROLE_ORDER[b.role] ?? 9)
-  );
+  return [...members].sort((a, b) => {
+    const roleDiff = (ROLE_ORDER[a.role] ?? 9) - (ROLE_ORDER[b.role] ?? 9);
+    if (roleDiff !== 0) return roleDiff;
+    return (a.year ?? '9999').localeCompare(b.year ?? '9999');
+  });
 }
 
 export default async function AboutPage() {
