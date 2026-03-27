@@ -260,6 +260,40 @@ export async function getProjectWithGallery(
 
 // ─── 구성원 ────────────────────────────────────────────
 
+/** bio.docx 줄 구조: 1=이름, 2=연도, 3=학위/프로그램, 4=소속, 5+=추가 내용 */
+function roleFromProgram(program: string): MemberData['role'] {
+  const p = program.toLowerCase().replace(/\s/g, '');
+  if (p.includes('m.s./ph.d') || p.includes('ms/phd') || p.includes('m.s/ph.d')) return 'ms-phd';
+  if (p.includes('ph.d') || p.includes('phd')) {
+    if (p.includes('graduate') || p.includes('alumni')) return 'phd-alumni';
+    return 'phd';
+  }
+  if (p.includes('m.s') || p.includes('ms') || p.includes('master')) {
+    if (p.includes('graduate') || p.includes('alumni')) return 'master-alumni';
+    return 'master';
+  }
+  return 'alumni';
+}
+
+async function parseResearcherBioDocx(path: string, fallbackName: string): Promise<Partial<MemberData>> {
+  try {
+    const buffer = await dbxDownloadBuffer(path);
+    const { value } = await mammoth.extractRawText({ buffer });
+    const lines = value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const name        = lines[0] || fallbackName;
+    const year        = lines[1] || undefined;
+    const program     = lines[2] || undefined;
+    const affiliation = lines[3] || undefined;
+    const extraLines  = lines.slice(4);
+    const bio         = extraLines.length > 0 ? extraLines.join('\n') : undefined;
+    const role        = program ? roleFromProgram(program) : 'phd';
+    return { name, year, program, affiliation, bio, role };
+  } catch (e) {
+    console.error('parseResearcherBioDocx error for', path, e);
+    return { name: fallbackName, role: 'phd' };
+  }
+}
+
 export async function getMembers(): Promise<{ professors: MemberData[]; researchers: MemberData[]; labIntro: string }> {
   // ── 교수: /Members/Professor/ 안에 파일이 바로 있음 ──
   const professorFiles = await listFiles('/Members/Professor');
@@ -296,16 +330,14 @@ export async function getMembers(): Promise<{ professors: MemberData[]; research
   const researchers = await Promise.all(
     researcherFolders.map(async (folderPath) => {
       const rawName = folderPath.split('/').pop() ?? '';
-      // 숫자 접두사 제거: "1.채지원" → "채지원"
-      const name = rawName.replace(/^\d+[.\s]/, '').trim();
-      const bio = await downloadJson<Partial<MemberData>>(`${folderPath}/bio.json`);
+      const fallbackName = rawName.replace(/^\d+[.\s]/, '').trim();
+      const files = await listFiles(folderPath);
+      const bioDocxFile = files.find(f => /bio\.docx$/i.test(f.split('/').pop() ?? ''));
+      const parsed = bioDocxFile
+        ? await parseResearcherBioDocx(bioDocxFile, fallbackName)
+        : { name: fallbackName, role: 'phd' as MemberData['role'] };
       const photo = await findThumbnail(folderPath);
-      return {
-        name: bio?.name ?? name,
-        role: (bio?.role ?? 'phd') as MemberData['role'],
-        photo,
-        ...bio,
-      } as MemberData;
+      return { ...parsed, photo } as MemberData;
     })
   );
 

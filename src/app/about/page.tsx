@@ -92,23 +92,13 @@ export default async function AboutPage() {
                 </div>
 
                 {/* 텍스트 — 하단 정렬 */}
-                <div className="flex-1 flex flex-col justify-end">
+                <div className="flex-1 flex flex-col justify-end font-sans text-xs text-lab-500 space-y-0.5">
                   <p className="text-sm font-semibold text-lab-900 mb-1">{member.name}</p>
-                  {member.nameEn && (
-                    <p className="text-xs text-lab-400 font-mono mb-2">{member.nameEn}</p>
-                  )}
-                  {member.bio ? (
-                    <div
-                      className="prose prose-sm prose-stone max-w-none font-sans [&_*]:font-sans"
-                      dangerouslySetInnerHTML={{ __html: member.bio }}
-                    />
-                  ) : (
-                    <div className="text-xs text-lab-500 space-y-0.5 font-sans">
-                      {member.year && <p>{member.year}</p>}
-                      {member.program && <p>{member.program}</p>}
-                      {member.affiliation && <p>{member.affiliation}</p>}
-                      {member.title && <p>{member.title}</p>}
-                    </div>
+                  {member.year        && <p>{member.year}</p>}
+                  {member.program     && <p>{member.program}</p>}
+                  {member.affiliation && <p>{member.affiliation}</p>}
+                  {member.bio && (
+                    <p className="mt-1 leading-relaxed whitespace-pre-line">{member.bio}</p>
                   )}
                 </div>
               </div>
