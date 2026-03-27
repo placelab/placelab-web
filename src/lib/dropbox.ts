@@ -251,9 +251,9 @@ export async function getProjectWithGallery(
     ...galleryFiles.map(f => imageProxyUrl(f)),
   ];
 
-  // 00-abstract.docx 우선, 없으면 info.json의 abstract 텍스트 사용
+  // info.json의 abstract 우선, 없으면 00-abstract.docx 사용
   const abstractFile = files.find(f => /00-abstract\.docx$/i.test(f.split('/').pop() ?? ''));
-  const abstract = abstractFile ? await parseDocx(abstractFile) : (info?.abstract ?? '');
+  const abstract = info?.abstract ?? (abstractFile ? await parseDocx(abstractFile) : '');
 
   return { project, gallery, abstract };
 }
