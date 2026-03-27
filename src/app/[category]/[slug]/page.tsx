@@ -59,13 +59,32 @@ export default async function ProjectPage({ params }: Props) {
         </div>
       )}
 
-      {/* Abstract only */}
+      {/* Abstract */}
       {abstract && (
-        <div className="max-w-3xl prose prose-sm prose-stone max-w-none">
+        <div className="max-w-3xl prose prose-sm prose-stone max-w-none mb-6">
           {abstract.startsWith('<')
             ? <div dangerouslySetInnerHTML={{ __html: abstract }} />
             : <p>{abstract}</p>
           }
+        </div>
+      )}
+
+      {/* Keywords (research) */}
+      {category === 'research' && project.keywords && project.keywords.length > 0 && (
+        <div className="max-w-3xl mt-6">
+          <p className="text-sm text-lab-500">{project.keywords.join(' · ')}</p>
+        </div>
+      )}
+
+      {/* Team (design) */}
+      {category === 'design' && project.team && project.team.members.length > 0 && (
+        <div className="max-w-3xl mt-6 space-y-1">
+          {project.team.members.map((m, i) => (
+            <div key={i} className="flex gap-4 text-sm text-lab-500">
+              {m.role && <span className="min-w-[200px]">{m.role}</span>}
+              {m.name && <span>{m.name}</span>}
+            </div>
+          ))}
         </div>
       )}
 
