@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { listFiles, uploadToDropbox } from '@/lib/dropbox';
+import { uploadToDropbox } from '@/lib/dropbox';
 
 interface BeholdSize { mediaUrl: string }
 
@@ -12,6 +12,29 @@ interface BeholdPost {
   timestamp: string;
   permalink: string;
   sizes?: { small?: BeholdSize; medium?: BeholdSize; large?: BeholdSize };
+}
+
+interface PostEntry {
+  mediaUrl: string;
+  permalink: string;
+  caption?: string;
+  timestamp: string;
+}
+
+async function getDropboxToken(): Promise<string> {
+  const refresh = process.env.DROPBOX_REFRESH_TOKEN;
+  const key = process.env.DROPBOX_APP_KEY;
+  const secret = process.env.DROPBOX_APP_SECRET;
+  if (refresh && key && secret) {
+    const r = await fetch('https://api.dropboxapi.com/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refresh, client_id: key, client_secret: secret }),
+      cache: 'no-store',
+    });
+    if (r.ok) return (await r.json()).access_token as string;
+  }
+  return process.env.DROPBOX_ACCESS_TOKEN ?? '';
 }
 
 async function fetchBeholdPosts(): Promise<BeholdPost[]> {
@@ -30,6 +53,24 @@ async function fetchBeholdPosts(): Promise<BeholdPost[]> {
   }
 }
 
+async function loadPostList(token: string): Promise<PostEntry[]> {
+  try {
+    const res = await fetch('https://content.dropboxapi.com/2/files/download', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Dropbox-API-Arg': JSON.stringify({ path: '/News/instagram-posts.json' }),
+      },
+      cache: 'no-store',
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
@@ -38,55 +79,38 @@ export async function GET(request: Request) {
   }
 
   try {
-    const posts = await fetchBeholdPosts();
-    if (posts.length === 0) {
-      return NextResponse.json({ synced: 0, message: 'No posts from Behold' });
+    const [token, beholdPosts] = await Promise.all([
+      getDropboxToken(),
+      fetchBeholdPosts(),
+    ]);
+
+    if (!token) return NextResponse.json({ error: 'No Dropbox token' }, { status: 500 });
+    if (beholdPosts.length === 0) return NextResponse.json({ synced: 0, message: 'No posts from Behold' });
+
+    // 현재 instagram-posts.json 로드
+    const existing = await loadPostList(token);
+    const existingPermalinks = new Set(existing.map(p => p.permalink));
+
+    // 새 포스트만 필터
+    const newPosts: PostEntry[] = beholdPosts
+      .filter(p => !existingPermalinks.has(p.permalink))
+      .map(p => ({
+        mediaUrl: p.sizes?.medium?.mediaUrl ?? p.sizes?.small?.mediaUrl ?? p.mediaUrl,
+        permalink: p.permalink,
+        caption: p.caption,
+        timestamp: p.timestamp,
+      }));
+
+    if (newPosts.length === 0) {
+      return NextResponse.json({ synced: 0, message: 'All posts already in list' });
     }
 
-    const existingFiles = await listFiles('/News/Instagram');
-    const existingIds = new Set(
-      existingFiles
-        .map(f => f.split('/').pop()?.replace(/\.(json|jpg|jpeg|png|mp4)$/i, '') ?? '')
-        .filter(Boolean)
-    );
+    // 새 포스트를 맨 앞에 추가 후 저장
+    const updated = [...newPosts, ...existing];
+    const jsonBuffer = Buffer.from(JSON.stringify(updated, null, 2), 'utf-8');
+    const ok = await uploadToDropbox('/News/instagram-posts.json', jsonBuffer);
 
-    let synced = 0;
-
-    for (const post of posts) {
-      if (existingIds.has(post.id)) continue;
-
-      // Behold CDN(안정) > thumbnailUrl > mediaUrl
-      const imgUrl =
-        post.sizes?.medium?.mediaUrl ??
-        post.sizes?.small?.mediaUrl ??
-        (post.mediaType === 'VIDEO' ? (post.thumbnailUrl ?? post.mediaUrl) : post.mediaUrl);
-
-      try {
-        const imgRes = await fetch(imgUrl);
-        if (imgRes.ok) {
-          const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
-          await uploadToDropbox(`/News/Instagram/${post.id}.jpg`, imgBuffer);
-        }
-      } catch (e) {
-        console.error(`Image download failed for post ${post.id}:`, e);
-      }
-
-      // 아카이브 JSON: sizes.medium URL을 mediaUrl로 저장 (안정적 Behold CDN)
-      const meta = {
-        id: post.id,
-        mediaType: post.mediaType,
-        mediaUrl: post.sizes?.medium?.mediaUrl ?? `/api/image?path=/News/Instagram/${post.id}.jpg`,
-        caption: post.caption,
-        timestamp: post.timestamp,
-        permalink: post.permalink,
-      };
-      const jsonBuffer = Buffer.from(JSON.stringify(meta, null, 2), 'utf-8');
-      await uploadToDropbox(`/News/Instagram/${post.id}.json`, jsonBuffer);
-
-      synced++;
-    }
-
-    return NextResponse.json({ synced, total: posts.length });
+    return NextResponse.json({ synced: newPosts.length, total: updated.length, saved: ok });
   } catch (e) {
     console.error('sync-instagram error:', e);
     return NextResponse.json({ error: String(e) }, { status: 500 });
