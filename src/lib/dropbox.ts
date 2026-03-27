@@ -223,7 +223,7 @@ export async function getProjectWithGallery(
   if (!folderPath) return null;
 
   const rawName = folderPath.split('/').pop() ?? '';
-  const info = await downloadJson<Partial<Omit<ProjectData, 'slug' | 'category'>>>(`${folderPath}/info.json`);
+  const info = await downloadJson<Partial<Omit<ProjectData, 'slug' | 'category'>> & { abstract?: string }>(`${folderPath}/info.json`);
   const orderMatch = rawName.match(/^(\d+)[.\s]/);
 
   const files = await listFiles(folderPath);
@@ -242,6 +242,8 @@ export async function getProjectWithGallery(
     tags: info?.tags ?? [],
     thumbnail: mainImage ? imageProxyUrl(mainImage) : '',
     order: info?.order ?? (orderMatch ? parseInt(orderMatch[1]) : 999),
+    team: info?.team,
+    keywords: info?.keywords,
   };
 
   const gallery = [
@@ -249,9 +251,9 @@ export async function getProjectWithGallery(
     ...galleryFiles.map(f => imageProxyUrl(f)),
   ];
 
-  // 00-abstract.docx 텍스트 추출
+  // 00-abstract.docx 우선, 없으면 info.json의 abstract 텍스트 사용
   const abstractFile = files.find(f => /00-abstract\.docx$/i.test(f.split('/').pop() ?? ''));
-  const abstract = abstractFile ? await parseDocx(abstractFile) : '';
+  const abstract = abstractFile ? await parseDocx(abstractFile) : (info?.abstract ?? '');
 
   return { project, gallery, abstract };
 }

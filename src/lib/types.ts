@@ -12,9 +12,8 @@ export interface ProjectData {
   tags: string[];
   thumbnail: string;
   gallery?: string[];
-  members?: string[];
-  publications?: string[];
-  links?: { label: string; url: string }[];
+  team?: { members: { role: string; name: string }[] };
+  keywords?: string[];
   order?: number;
   visible?: boolean;
 }
@@ -36,6 +35,9 @@ export interface MemberData {
   research?: string[];
   education?: string[];
   links?: { label: string; url: string }[];
+  year?: string;
+  program?: string;
+  affiliation?: string;
 }
 
 // ──────────────────────────────────────────

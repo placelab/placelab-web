@@ -56,32 +56,46 @@ export default async function AboutPage() {
       {/* ─── 연구원 섹션 — 흰 배경 ─── */}
       {researchers.length > 0 && (
         <div className="section-wrapper py-20">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+          {/* 4-col desktop / 2-col mobile: 홀수=사진, 짝수=정보 */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {researchers.map((member) => (
-              <div key={member.name} className="group">
-                <div className="relative aspect-square bg-lab-200 rounded-sm overflow-hidden mb-3">
-                  {member.photo && (
-                    <Image
-                      src={member.photo}
-                      alt={member.name}
-                      fill
-                      unoptimized
-                      className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                    />
+              <>
+                {/* 홀수 셀: 사진 */}
+                <div key={`${member.name}-photo`} className="group">
+                  <div className="relative aspect-square bg-lab-200 rounded-sm overflow-hidden">
+                    {member.photo && (
+                      <Image
+                        src={member.photo}
+                        alt={member.name}
+                        fill
+                        unoptimized
+                        className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                        sizes="(max-width: 1024px) 50vw, 25vw"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* 짝수 셀: 이름/연도/프로그램/소속 */}
+                <div key={`${member.name}-info`} className="flex flex-col justify-center py-2">
+                  <h3 className="text-sm font-semibold text-lab-900">{member.name}</h3>
+                  {member.nameEn && (
+                    <p className="text-xs text-lab-400 font-mono mt-0.5">{member.nameEn}</p>
+                  )}
+                  {member.year && (
+                    <p className="text-xs text-lab-500 mt-1">{member.year}</p>
+                  )}
+                  {member.program && (
+                    <p className="text-xs text-lab-500">{member.program}</p>
+                  )}
+                  {member.affiliation && (
+                    <p className="text-xs text-lab-500">{member.affiliation}</p>
+                  )}
+                  {member.title && !member.year && !member.program && (
+                    <p className="text-xs text-lab-500 mt-0.5">{member.title}</p>
                   )}
                 </div>
-                <h3 className="text-sm font-semibold text-lab-900">{member.name}</h3>
-                {member.nameEn && (
-                  <p className="text-xs text-lab-400 font-mono">{member.nameEn}</p>
-                )}
-                {member.title && (
-                  <p className="mt-0.5 text-xs text-lab-500">{member.title}</p>
-                )}
-                {member.research && member.research.length > 0 && (
-                  <p className="mt-1 text-xs text-lab-600">{member.research.join(', ')}</p>
-                )}
-              </div>
+              </>
             ))}
           </div>
         </div>
