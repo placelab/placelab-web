@@ -127,13 +127,13 @@ export async function listFiles(path: string): Promise<string[]> {
   }
 }
 
-/** 폴더에서 첫 번째 이미지의 Dropbox CDN 직접 링크 반환 (00-main.jpg 우선) */
+/** 폴더에서 첫 번째 이미지의 프록시 URL 반환 (00-main.jpg 우선) */
 async function findThumbnail(folderPath: string): Promise<string> {
   const files = await listFiles(folderPath);
   const images = files.filter(f => /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f));
   if (images.length === 0) return '';
   const main = images.find(f => f.includes('00-main')) ?? images[0];
-  return getDirectImageUrl(main);
+  return imageProxyUrl(main);
 }
 
 export async function downloadJson<T>(path: string): Promise<T | null> {
@@ -194,9 +194,9 @@ export async function getProjects(category: 'research' | 'design'): Promise<Proj
       // 제목: 숫자 접두사 제거
       const title = info?.title ?? rawName.replace(/^\d+[.\s]/, '').trim();
 
-      // 썸네일: info.json에 명시된 파일 또는 자동 탐지
+      // 썸네일: 프록시 URL 사용 (만료 없음, 안정적)
       const thumbnail = info?.thumbnail
-        ? await getDirectImageUrl(`${folderPath}/${info.thumbnail}`)
+        ? imageProxyUrl(`${folderPath}/${info.thumbnail}`)
         : await findThumbnail(folderPath);
 
       return {
@@ -342,7 +342,7 @@ export async function getMembers(): Promise<{ professors: MemberData[]; research
   const professor: MemberData = {
     name: profBio?.name ?? profNameFromFile ?? '교수',
     role: 'professor',
-    photo: profImageFile ? await getDirectImageUrl(profImageFile) : '',
+    photo: profImageFile ? imageProxyUrl(profImageFile) : '',
     bio: profDocxHtml || profBio?.bio || '',
     ...profBio,
     // Profile.docx가 있으면 bio 덮어씌움
