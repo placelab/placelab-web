@@ -2,8 +2,16 @@
 const nextConfig = {
   // Vercel 서버사이드 렌더링 (static export 제거)
   images: {
-    // 같은 도메인의 /api/image 프록시 사용
-    remotePatterns: [],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'dl.dropboxusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.dropboxusercontent.com',
+      },
+    ],
   },
 };
 

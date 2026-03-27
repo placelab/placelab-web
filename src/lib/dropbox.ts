@@ -127,13 +127,13 @@ export async function listFiles(path: string): Promise<string[]> {
   }
 }
 
-/** 폴더에서 첫 번째 이미지 파일의 proxy URL 반환 (00-main.jpg 우선) */
+/** 폴더에서 첫 번째 이미지의 Dropbox CDN 직접 링크 반환 (00-main.jpg 우선) */
 async function findThumbnail(folderPath: string): Promise<string> {
   const files = await listFiles(folderPath);
   const images = files.filter(f => /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f));
   if (images.length === 0) return '';
   const main = images.find(f => f.includes('00-main')) ?? images[0];
-  return imageProxyUrl(main);
+  return getDirectImageUrl(main);
 }
 
 export async function downloadJson<T>(path: string): Promise<T | null> {
@@ -146,9 +146,29 @@ export async function downloadJson<T>(path: string): Promise<T | null> {
   }
 }
 
-/** Dropbox 이미지를 /api/image 프록시를 통해 제공하는 URL 반환 */
+/** Dropbox 이미지를 /api/image 프록시를 통해 제공하는 URL 반환 (fallback용) */
 export function imageProxyUrl(dropboxPath: string): string {
   return `/api/image?path=${encodeURIComponent(dropboxPath)}`;
+}
+
+/** Dropbox CDN 직접 링크 반환 — Vercel 대역폭 없이 브라우저가 직접 수신 */
+export async function getDirectImageUrl(dropboxPath: string): Promise<string> {
+  try {
+    const res = await fetch(`${API_BASE}/files/get_temporary_link`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${await getToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ path: dropboxPath }),
+      next: { revalidate: 3600 }, // 1시간 캐시 (링크 유효기간 4시간)
+    });
+    if (!res.ok) return imageProxyUrl(dropboxPath);
+    const data = await res.json();
+    return (data.link as string) ?? imageProxyUrl(dropboxPath);
+  } catch {
+    return imageProxyUrl(dropboxPath);
+  }
 }
 
 // ─── 프로젝트 ────────────────────────────────────────────
@@ -176,7 +196,7 @@ export async function getProjects(category: 'research' | 'design'): Promise<Proj
 
       // 썸네일: info.json에 명시된 파일 또는 자동 탐지
       const thumbnail = info?.thumbnail
-        ? imageProxyUrl(`${folderPath}/${info.thumbnail}`)
+        ? await getDirectImageUrl(`${folderPath}/${info.thumbnail}`)
         : await findThumbnail(folderPath);
 
       return {
@@ -243,16 +263,16 @@ export async function getProjectWithGallery(
     description: info?.description ?? '',
     year: info?.year ?? new Date().getFullYear(),
     tags: info?.tags ?? [],
-    thumbnail: mainImage ? imageProxyUrl(mainImage) : '',
+    thumbnail: mainImage ? await getDirectImageUrl(mainImage) : '',
     order: info?.order ?? (orderMatch ? parseInt(orderMatch[1]) : 999),
     team: info?.team,
     keywords: info?.keywords,
   };
 
-  const gallery = [
-    ...(mainImage ? [imageProxyUrl(mainImage)] : []),
-    ...galleryFiles.map(f => imageProxyUrl(f)),
-  ];
+  const gallery = await Promise.all([
+    ...(mainImage ? [getDirectImageUrl(mainImage)] : []),
+    ...galleryFiles.map(f => getDirectImageUrl(f)),
+  ]);
 
   // info.json의 abstract 우선, 없으면 00-abstract.docx 사용
   const abstractFile = files.find(f => /00-abstract\.docx$/i.test(f.split('/').pop() ?? ''));
@@ -322,7 +342,7 @@ export async function getMembers(): Promise<{ professors: MemberData[]; research
   const professor: MemberData = {
     name: profBio?.name ?? profNameFromFile ?? '교수',
     role: 'professor',
-    photo: profImageFile ? imageProxyUrl(profImageFile) : '',
+    photo: profImageFile ? await getDirectImageUrl(profImageFile) : '',
     bio: profDocxHtml || profBio?.bio || '',
     ...profBio,
     // Profile.docx가 있으면 bio 덮어씌움
