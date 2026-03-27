@@ -5,13 +5,14 @@ import type { MemberData } from '@/lib/types';
 export const revalidate = 3600;
 
 const ROLE_ORDER: Record<string, number> = {
-  phd:            1,
-  'ms-phd':       2,
-  master:         3,
-  'phd-alumni':   4,
-  'master-alumni':5,
-  alumni:         6,
-  undergraduate:  7,
+  phd:                   1,
+  'ms-phd':              2,
+  master:                3,
+  'phd-alumni':          4,
+  'master-alumni':       5,
+  alumni:                6,
+  undergraduate:         7,
+  'undergraduate-intern':8,
 };
 
 function sortResearchers(members: MemberData[]): MemberData[] {

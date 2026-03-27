@@ -272,6 +272,7 @@ function roleFromProgram(program: string): MemberData['role'] {
     if (p.includes('graduate') || p.includes('alumni')) return 'master-alumni';
     return 'master';
   }
+  if (p.includes('undergraduate') || p.includes('intern')) return 'undergraduate-intern';
   return 'alumni';
 }
 
