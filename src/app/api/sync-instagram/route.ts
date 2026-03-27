@@ -65,7 +65,7 @@ export async function GET(request: Request) {
         const imgRes = await fetch(imgUrl);
         if (imgRes.ok) {
           const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
-          await uploadToDropbox(`/News/Instagram/${post.id}.jpg`, imgBuffer, 'image/jpeg');
+          await uploadToDropbox(`/News/Instagram/${post.id}.jpg`, imgBuffer);
         }
       } catch (e) {
         console.error(`Image download failed for post ${post.id}:`, e);
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
         permalink: post.permalink,
       };
       const jsonBuffer = Buffer.from(JSON.stringify(meta, null, 2), 'utf-8');
-      await uploadToDropbox(`/News/Instagram/${post.id}.json`, jsonBuffer, 'application/json');
+      await uploadToDropbox(`/News/Instagram/${post.id}.json`, jsonBuffer);
 
       synced++;
     }

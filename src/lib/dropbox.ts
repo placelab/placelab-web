@@ -369,17 +369,18 @@ export async function getMembers(): Promise<{ professors: MemberData[]; research
 }
 
 /** Dropbox에 파일 업로드 (overwrite 모드) */
-export async function uploadToDropbox(dropboxPath: string, buffer: Buffer, mimeType = 'application/octet-stream'): Promise<boolean> {
+export async function uploadToDropbox(dropboxPath: string, buffer: Buffer): Promise<boolean> {
   try {
     const res = await fetch(`${CONTENT_BASE}/files/upload`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${await getToken()}`,
-        'Content-Type': mimeType,
+        'Content-Type': 'application/octet-stream',
         'Dropbox-API-Arg': toAsciiHeader({ path: dropboxPath, mode: 'overwrite', autorename: false }),
       },
       body: new Uint8Array(buffer),
     });
+    if (!res.ok) console.error('uploadToDropbox failed for', dropboxPath, res.status, await res.text());
     return res.ok;
   } catch (e) {
     console.error('uploadToDropbox error for', dropboxPath, e);
