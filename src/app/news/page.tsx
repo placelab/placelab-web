@@ -14,12 +14,12 @@ interface BeholdPost {
 }
 
 async function getBeholdPosts(): Promise<BeholdPost[]> {
-  const feedId = process.env.BEHOLD_FEED_ID;
-  if (!feedId) return [];
+  const feed = process.env.BEHOLD_FEED_ID;
+  if (!feed) return [];
+  // Feed ID 단독 또는 전체 URL 모두 허용
+  const url = feed.startsWith('http') ? feed : `https://feeds.behold.so/${feed}`;
   try {
-    const res = await fetch(`https://feeds.behold.so/${feedId}`, {
-      next: { revalidate: 3600 },
-    });
+    const res = await fetch(url, { next: { revalidate: 3600 } });
     if (!res.ok) return [];
     return res.json();
   } catch {
