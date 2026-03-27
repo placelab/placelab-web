@@ -1,9 +1,8 @@
 import Image from 'next/image';
-import { getArchivedInstagramPosts } from '@/lib/dropbox';
 
 export const dynamic = 'force-dynamic';
 
-interface BeholdPost {
+interface Post {
   id: string;
   mediaType: 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM';
   mediaUrl: string;
@@ -13,12 +12,12 @@ interface BeholdPost {
   permalink: string;
 }
 
-async function getBeholdPosts(): Promise<BeholdPost[]> {
+async function getBeholdPosts(): Promise<Post[]> {
   const feed = process.env.BEHOLD_FEED_ID;
   if (!feed) return [];
   const url = feed.startsWith('http') ? feed : `https://feeds.behold.so/${feed}`;
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return [];
     return res.json();
   } catch {
@@ -26,32 +25,75 @@ async function getBeholdPosts(): Promise<BeholdPost[]> {
   }
 }
 
+async function getDropboxToken(): Promise<string> {
+  const refresh = process.env.DROPBOX_REFRESH_TOKEN;
+  const key = process.env.DROPBOX_APP_KEY;
+  const secret = process.env.DROPBOX_APP_SECRET;
+  if (refresh && key && secret) {
+    const r = await fetch('https://api.dropboxapi.com/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refresh, client_id: key, client_secret: secret }),
+      cache: 'no-store',
+    });
+    if (r.ok) return (await r.json()).access_token as string;
+  }
+  return process.env.DROPBOX_ACCESS_TOKEN ?? '';
+}
+
+async function getArchivedPosts(): Promise<Post[]> {
+  try {
+    const token = await getDropboxToken();
+    if (!token) return [];
+
+    // /News/Instagram/ 폴더 파일 목록
+    const listRes = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '/News/Instagram' }),
+      cache: 'no-store',
+    });
+    if (!listRes.ok) return [];
+
+    const listData = await listRes.json();
+    const jsonFiles: string[] = (listData.entries ?? [])
+      .filter((e: { '.tag': string; path_display: string }) => e['.tag'] === 'file' && e.path_display.endsWith('.json'))
+      .map((e: { path_display: string }) => e.path_display);
+
+    // 각 JSON 파일 다운로드
+    const posts = await Promise.all(jsonFiles.map(async (path) => {
+      try {
+        const dlRes = await fetch('https://content.dropboxapi.com/2/files/download', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Dropbox-API-Arg': JSON.stringify({ path }),
+          },
+          cache: 'no-store',
+        });
+        if (!dlRes.ok) return null;
+        return await dlRes.json() as Post;
+      } catch {
+        return null;
+      }
+    }));
+
+    return posts.filter((p): p is Post => p !== null);
+  } catch {
+    return [];
+  }
+}
+
 export default async function NewsPage() {
-  // Behold (최신 6개) + Dropbox 아카이브 병합
   const [beholdPosts, archivedPosts] = await Promise.all([
     getBeholdPosts(),
-    getArchivedInstagramPosts(),
+    getArchivedPosts(),
   ]);
 
-  // Behold 포스트를 BeholdPost 형태로 정규화
-  const beholdNormalized: BeholdPost[] = beholdPosts;
+  const beholdIds = new Set(beholdPosts.map(p => p.id));
+  const archiveOnly = archivedPosts.filter(p => !beholdIds.has(p.id));
 
-  // Dropbox 아카이브를 BeholdPost 형태로 변환
-  const archivedNormalized: BeholdPost[] = archivedPosts.map(p => ({
-    id: p.id,
-    mediaType: p.mediaType,
-    mediaUrl: p.mediaUrl,
-    caption: p.caption,
-    timestamp: p.timestamp,
-    permalink: p.permalink,
-  }));
-
-  // 중복 제거 (Behold 우선): Behold ID 세트
-  const beholdIds = new Set(beholdNormalized.map(p => p.id));
-  const archiveOnly = archivedNormalized.filter(p => !beholdIds.has(p.id));
-
-  // 합친 뒤 날짜 내림차순 정렬
-  const allPosts = [...beholdNormalized, ...archiveOnly].sort(
+  const allPosts = [...beholdPosts, ...archiveOnly].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
@@ -87,7 +129,6 @@ export default async function NewsPage() {
                   rel="noopener noreferrer"
                   className="group block"
                 >
-                  {/* 이미지 */}
                   <div className="relative aspect-square bg-lab-100 overflow-hidden rounded-sm mb-4">
                     <Image
                       src={imgSrc}
@@ -97,11 +138,7 @@ export default async function NewsPage() {
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
-
-                  {/* 날짜 */}
                   <p className="text-xs text-lab-400 font-mono mb-2">{date}</p>
-
-                  {/* 캡션 */}
                   {post.caption && (
                     <p className="text-sm text-lab-700 leading-relaxed line-clamp-4">
                       {post.caption}
