@@ -2,38 +2,11 @@ import Image from 'next/image';
 
 export const dynamic = 'force-dynamic';
 
-interface BeholdSize {
-  mediaUrl: string;
-  height: number;
-  width: number;
-}
-
 interface Post {
-  id: string;
-  mediaType: 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM';
   mediaUrl: string;
-  thumbnailUrl?: string;
+  permalink: string;
   caption?: string;
   timestamp: string;
-  permalink: string;
-  sizes?: { small?: BeholdSize; medium?: BeholdSize; large?: BeholdSize; full?: BeholdSize };
-}
-
-async function getBeholdPosts(): Promise<Post[]> {
-  const feed = process.env.BEHOLD_FEED_ID;
-  if (!feed) return [];
-  const url = feed.startsWith('http') ? feed : `https://feeds.behold.so/${feed}`;
-  try {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return [];
-    const data = await res.json();
-    // Behold 위젯 응답: { posts: [...] } 또는 직접 배열
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data?.posts)) return data.posts;
-    return [];
-  } catch {
-    return [];
-  }
 }
 
 async function getDropboxToken(): Promise<string> {
@@ -52,66 +25,35 @@ async function getDropboxToken(): Promise<string> {
   return process.env.DROPBOX_ACCESS_TOKEN ?? '';
 }
 
-async function getArchivedPosts(): Promise<Post[]> {
+async function getPostList(): Promise<Post[]> {
   try {
     const token = await getDropboxToken();
     if (!token) return [];
 
-    // /News/Instagram/ 폴더 파일 목록
-    const listRes = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
+    const res = await fetch('https://content.dropboxapi.com/2/files/download', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: '/News/Instagram' }),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Dropbox-API-Arg': JSON.stringify({ path: '/News/instagram-posts.json' }),
+      },
       cache: 'no-store',
     });
-    if (!listRes.ok) return [];
+    if (!res.ok) return [];
 
-    const listData = await listRes.json();
-    const jsonFiles: string[] = (listData.entries ?? [])
-      .filter((e: { '.tag': string; path_display: string }) => e['.tag'] === 'file' && e.path_display.endsWith('.json'))
-      .map((e: { path_display: string }) => e.path_display);
-
-    // 각 JSON 파일 다운로드
-    const posts = await Promise.all(jsonFiles.map(async (path) => {
-      try {
-        const dlRes = await fetch('https://content.dropboxapi.com/2/files/download', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Dropbox-API-Arg': JSON.stringify({ path }),
-          },
-          cache: 'no-store',
-        });
-        if (!dlRes.ok) return null;
-        return await dlRes.json() as Post;
-      } catch {
-        return null;
-      }
-    }));
-
-    return posts.filter((p): p is Post => p !== null);
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   } catch {
     return [];
   }
 }
 
 export default async function NewsPage() {
-  const [beholdPosts, archivedPosts] = await Promise.all([
-    getBeholdPosts(),
-    getArchivedPosts(),
-  ]);
-
-  const beholdIds = new Set(beholdPosts.map(p => p.id));
-  const archiveOnly = archivedPosts.filter(p => !beholdIds.has(p.id));
-
-  const allPosts = [...beholdPosts, ...archiveOnly].sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
+  const posts = await getPostList();
 
   return (
     <section>
       <div className="section-wrapper pt-24 pb-24">
-        {allPosts.length === 0 ? (
+        {posts.length === 0 ? (
           <div className="py-20 text-center">
             <p className="text-lab-400 text-sm mb-3">피드를 불러올 수 없습니다.</p>
             <a
@@ -125,18 +67,13 @@ export default async function NewsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {allPosts.map((post) => {
-              // Behold CDN(안정) > thumbnailUrl > mediaUrl 순으로 사용
-              const imgSrc =
-                post.sizes?.medium?.mediaUrl ??
-                post.sizes?.small?.mediaUrl ??
-                (post.mediaType === 'VIDEO' ? (post.thumbnailUrl ?? post.mediaUrl) : post.mediaUrl);
+            {posts.map((post, i) => {
               const date = new Date(post.timestamp).toLocaleDateString('ko-KR', {
                 year: 'numeric', month: 'long', day: 'numeric',
               });
               return (
                 <a
-                  key={post.id}
+                  key={post.permalink + i}
                   href={post.permalink}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -144,7 +81,7 @@ export default async function NewsPage() {
                 >
                   <div className="relative aspect-square bg-lab-100 overflow-hidden rounded-sm mb-4">
                     <Image
-                      src={imgSrc}
+                      src={post.mediaUrl}
                       alt={post.caption?.slice(0, 60) ?? ''}
                       fill
                       unoptimized
