@@ -378,7 +378,7 @@ export async function uploadToDropbox(dropboxPath: string, buffer: Buffer, mimeT
         'Content-Type': mimeType,
         'Dropbox-API-Arg': toAsciiHeader({ path: dropboxPath, mode: 'overwrite', autorename: false }),
       },
-      body: buffer,
+      body: new Uint8Array(buffer),
     });
     return res.ok;
   } catch (e) {
