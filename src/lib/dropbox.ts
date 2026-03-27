@@ -368,6 +368,25 @@ export async function getMembers(): Promise<{ professors: MemberData[]; research
   return { professors: [professor], researchers, labIntro };
 }
 
+/** Dropbox에 파일 업로드 (overwrite 모드) */
+export async function uploadToDropbox(dropboxPath: string, buffer: Buffer, mimeType = 'application/octet-stream'): Promise<boolean> {
+  try {
+    const res = await fetch(`${CONTENT_BASE}/files/upload`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${await getToken()}`,
+        'Content-Type': mimeType,
+        'Dropbox-API-Arg': toAsciiHeader({ path: dropboxPath, mode: 'overwrite', autorename: false }),
+      },
+      body: buffer,
+    });
+    return res.ok;
+  } catch (e) {
+    console.error('uploadToDropbox error for', dropboxPath, e);
+    return false;
+  }
+}
+
 // ─── 소식 ────────────────────────────────────────────
 
 export async function getNews(): Promise<NewsItem[]> {
@@ -379,6 +398,29 @@ export async function getNews(): Promise<NewsItem[]> {
   return news
     .filter((n): n is NewsItem => n !== null)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+export interface ArchivedPost {
+  id: string;
+  mediaType: 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM';
+  mediaUrl: string;
+  caption?: string;
+  timestamp: string;
+  permalink: string;
+}
+
+/** Dropbox /News/Instagram/ 에서 보관된 Instagram 포스트 목록 반환 */
+export async function getArchivedInstagramPosts(): Promise<ArchivedPost[]> {
+  try {
+    const files = await listFiles('/News/Instagram');
+    const jsonFiles = files.filter(f => f.endsWith('.json'));
+    const posts = await Promise.all(jsonFiles.map(f => downloadJson<ArchivedPost>(f)));
+    return posts
+      .filter((p): p is ArchivedPost => p !== null)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  } catch {
+    return [];
+  }
 }
 
 // ─── 유틸리티 ────────────────────────────────────────────

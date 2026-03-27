@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import Link from 'next/link';
+import { getArchivedInstagramPosts } from '@/lib/dropbox';
 
 export const revalidate = 3600;
 
@@ -16,7 +16,6 @@ interface BeholdPost {
 async function getBeholdPosts(): Promise<BeholdPost[]> {
   const feed = process.env.BEHOLD_FEED_ID;
   if (!feed) return [];
-  // Feed ID 단독 또는 전체 URL 모두 허용
   const url = feed.startsWith('http') ? feed : `https://feeds.behold.so/${feed}`;
   try {
     const res = await fetch(url, { next: { revalidate: 3600 } });
@@ -28,12 +27,38 @@ async function getBeholdPosts(): Promise<BeholdPost[]> {
 }
 
 export default async function NewsPage() {
-  const posts = await getBeholdPosts();
+  // Behold (최신 6개) + Dropbox 아카이브 병합
+  const [beholdPosts, archivedPosts] = await Promise.all([
+    getBeholdPosts(),
+    getArchivedInstagramPosts(),
+  ]);
+
+  // Behold 포스트를 BeholdPost 형태로 정규화
+  const beholdNormalized: BeholdPost[] = beholdPosts;
+
+  // Dropbox 아카이브를 BeholdPost 형태로 변환
+  const archivedNormalized: BeholdPost[] = archivedPosts.map(p => ({
+    id: p.id,
+    mediaType: p.mediaType,
+    mediaUrl: p.mediaUrl,
+    caption: p.caption,
+    timestamp: p.timestamp,
+    permalink: p.permalink,
+  }));
+
+  // 중복 제거 (Behold 우선): Behold ID 세트
+  const beholdIds = new Set(beholdNormalized.map(p => p.id));
+  const archiveOnly = archivedNormalized.filter(p => !beholdIds.has(p.id));
+
+  // 합친 뒤 날짜 내림차순 정렬
+  const allPosts = [...beholdNormalized, ...archiveOnly].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
 
   return (
     <section>
       <div className="section-wrapper pt-24 pb-24">
-        {posts.length === 0 ? (
+        {allPosts.length === 0 ? (
           <div className="py-20 text-center">
             <p className="text-lab-400 text-sm mb-3">피드를 불러올 수 없습니다.</p>
             <a
@@ -47,7 +72,7 @@ export default async function NewsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {posts.map((post) => {
+            {allPosts.map((post) => {
               const imgSrc = post.mediaType === 'VIDEO'
                 ? (post.thumbnailUrl ?? post.mediaUrl)
                 : post.mediaUrl;
