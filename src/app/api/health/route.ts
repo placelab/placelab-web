@@ -57,5 +57,25 @@ export async function GET() {
     result.token_refresh = { error: String(e) };
   }
 
+  // 4) Behold 피드 테스트
+  try {
+    const feed = process.env.BEHOLD_FEED_ID ?? '';
+    const url = feed.startsWith('http') ? feed : `https://feeds.behold.so/${feed}`;
+    const beholdRes = await fetch(url, { cache: 'no-store' });
+    const beholdBody = await beholdRes.text();
+    let parsed: unknown = null;
+    try { parsed = JSON.parse(beholdBody); } catch { /* ignore */ }
+    result.behold = {
+      url,
+      status: beholdRes.status,
+      ok: beholdRes.ok,
+      is_array: Array.isArray(parsed),
+      length: Array.isArray(parsed) ? parsed.length : null,
+      raw_preview: beholdBody.slice(0, 200),
+    };
+  } catch (e) {
+    result.behold = { error: String(e) };
+  }
+
   return NextResponse.json(result, { status: 200 });
 }
