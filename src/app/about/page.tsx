@@ -1,10 +1,28 @@
 import Image from 'next/image';
 import { getMembers } from '@/lib/dropbox';
+import type { MemberData } from '@/lib/types';
 
 export const revalidate = 3600;
 
+const ROLE_ORDER: Record<string, number> = {
+  phd:            1,
+  'ms-phd':       2,
+  master:         3,
+  'phd-alumni':   4,
+  'master-alumni':5,
+  alumni:         6,
+  undergraduate:  7,
+};
+
+function sortResearchers(members: MemberData[]): MemberData[] {
+  return [...members].sort(
+    (a, b) => (ROLE_ORDER[a.role] ?? 9) - (ROLE_ORDER[b.role] ?? 9)
+  );
+}
+
 export default async function AboutPage() {
   const { professors, researchers, labIntro } = await getMembers();
+  const sorted = sortResearchers(researchers);
 
   return (
     <section>
@@ -41,7 +59,7 @@ export default async function AboutPage() {
                 <div className="lg:col-span-9">
                   {prof.bio && (
                     <div
-                      className="prose prose-sm prose-stone max-w-none"
+                      className="prose prose-sm prose-stone max-w-none font-sans"
                       dangerouslySetInnerHTML={{ __html: prof.bio }}
                     />
                   )}
@@ -53,14 +71,14 @@ export default async function AboutPage() {
         </div>
       </div>
 
-      {/* ─── 연구원 섹션 — 흰 배경 ─── */}
-      {researchers.length > 0 && (
+      {/* ─── 연구원 섹션 — 흰 배경, 2열 ─── */}
+      {sorted.length > 0 && (
         <div className="section-wrapper py-20">
-          <div className="divide-y divide-lab-100">
-            {researchers.map((member) => (
-              <div key={member.name} className="flex items-end gap-8 py-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-12">
+            {sorted.map((member) => (
+              <div key={member.name} className="flex items-end gap-6">
                 {/* 사진 — 자연 비율 */}
-                <div className="flex-shrink-0 w-40 sm:w-52">
+                <div className="flex-shrink-0 w-36 sm:w-44">
                   {member.photo ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -73,25 +91,24 @@ export default async function AboutPage() {
                   )}
                 </div>
 
-                {/* 텍스트 — 오른쪽, 하단 정렬 */}
+                {/* 텍스트 — 하단 정렬 */}
                 <div className="flex-1 flex flex-col justify-end">
-                  <h3 className="text-sm font-semibold text-lab-900 mb-1">{member.name}</h3>
+                  <p className="text-sm font-semibold text-lab-900 mb-1">{member.name}</p>
                   {member.nameEn && (
                     <p className="text-xs text-lab-400 font-mono mb-2">{member.nameEn}</p>
                   )}
-                  {member.bio && (
+                  {member.bio ? (
                     <div
-                      className="prose prose-sm prose-stone max-w-none"
+                      className="prose prose-sm prose-stone max-w-none font-sans [&_*]:font-sans"
                       dangerouslySetInnerHTML={{ __html: member.bio }}
                     />
-                  )}
-                  {!member.bio && (
-                    <>
-                      {member.year && <p className="text-xs text-lab-500">{member.year}</p>}
-                      {member.program && <p className="text-xs text-lab-500">{member.program}</p>}
-                      {member.affiliation && <p className="text-xs text-lab-500">{member.affiliation}</p>}
-                      {member.title && <p className="text-xs text-lab-500">{member.title}</p>}
-                    </>
+                  ) : (
+                    <div className="text-xs text-lab-500 space-y-0.5 font-sans">
+                      {member.year && <p>{member.year}</p>}
+                      {member.program && <p>{member.program}</p>}
+                      {member.affiliation && <p>{member.affiliation}</p>}
+                      {member.title && <p>{member.title}</p>}
+                    </div>
                   )}
                 </div>
               </div>

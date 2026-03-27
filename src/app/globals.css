@@ -92,6 +92,11 @@
   margin-bottom: 0 !important;
 }
 
+/* Word/docx에서 불러온 HTML의 인라인 폰트 스타일 무력화 — Noto Sans KR 적용 */
+.prose * {
+  font-family: 'Open Sans', 'Noto Sans KR', system-ui, sans-serif !important;
+}
+
 /* ─── Utility Layer ─── */
 @layer utilities {
   .text-balance {

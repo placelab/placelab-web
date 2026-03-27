@@ -27,7 +27,7 @@ export type ProjectInfoJson = Omit<ProjectData, 'slug' | 'category'>;
 export interface MemberData {
   name: string;
   nameEn?: string;
-  role: 'professor' | 'phd' | 'master' | 'undergraduate' | 'alumni';
+  role: 'professor' | 'phd' | 'ms-phd' | 'master' | 'phd-alumni' | 'master-alumni' | 'undergraduate' | 'alumni';
   title?: string;
   email?: string;
   photo?: string;

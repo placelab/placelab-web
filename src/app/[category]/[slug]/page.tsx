@@ -34,6 +34,16 @@ export default async function ProjectPage({ params }: Props) {
         ← {category === 'research' ? 'Research' : 'Design'}
       </Link>
 
+      {/* 제목 + 부제목 */}
+      <div className="max-w-3xl mb-10">
+        <h1 className="text-2xl md:text-3xl font-sans font-semibold text-lab-900 leading-tight">
+          {project.title}
+        </h1>
+        {project.subtitle && (
+          <p className="mt-2 text-lg text-lab-500">{project.subtitle}</p>
+        )}
+      </div>
+
       {/* 메인 이미지 */}
       {gallery[0] && (
         <div className="relative w-full bg-lab-100 rounded-sm overflow-hidden mb-10">
@@ -49,37 +59,15 @@ export default async function ProjectPage({ params }: Props) {
         </div>
       )}
 
-      {/* Abstract + Keywords/Team */}
-      <div className="max-w-3xl">
-        {/* Abstract */}
-        {abstract && (
-          <div className="prose prose-sm prose-stone max-w-none mb-8">
-            {abstract.startsWith('<')
-              ? <div dangerouslySetInnerHTML={{ __html: abstract }} />
-              : <p>{abstract}</p>
-            }
-          </div>
-        )}
-
-        {/* Keywords (research) */}
-        {category === 'research' && project.keywords && project.keywords.length > 0 && (
-          <p className="text-sm text-lab-500">
-            {project.keywords.join(' · ')}
-          </p>
-        )}
-
-        {/* Team (design) */}
-        {category === 'design' && project.team && project.team.members.length > 0 && (
-          <div className="space-y-1">
-            {project.team.members.map((m, i) => (
-              <div key={i} className="flex gap-4 text-sm text-lab-500">
-                {m.role && <span className="min-w-[200px]">{m.role}</span>}
-                {m.name && <span>{m.name}</span>}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Abstract only */}
+      {abstract && (
+        <div className="max-w-3xl prose prose-sm prose-stone max-w-none">
+          {abstract.startsWith('<')
+            ? <div dangerouslySetInnerHTML={{ __html: abstract }} />
+            : <p>{abstract}</p>
+          }
+        </div>
+      )}
 
       {/* 나머지 갤러리 이미지 */}
       {gallery.length > 1 && (
