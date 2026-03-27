@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { listFiles, uploadToDropbox } from '@/lib/dropbox';
 
+interface BeholdSize { mediaUrl: string }
+
 interface BeholdPost {
   id: string;
   mediaType: 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM';
@@ -9,6 +11,7 @@ interface BeholdPost {
   caption?: string;
   timestamp: string;
   permalink: string;
+  sizes?: { small?: BeholdSize; medium?: BeholdSize; large?: BeholdSize };
 }
 
 async function fetchBeholdPosts(): Promise<BeholdPost[]> {
@@ -18,14 +21,16 @@ async function fetchBeholdPosts(): Promise<BeholdPost[]> {
   try {
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return [];
-    return res.json();
+    const data = await res.json();
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.posts)) return data.posts;
+    return [];
   } catch {
     return [];
   }
 }
 
 export async function GET(request: Request) {
-  // Vercel Cron 또는 CRON_SECRET으로 인증
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
@@ -33,13 +38,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    // 1) Behold 피드에서 최신 포스트 가져오기
     const posts = await fetchBeholdPosts();
     if (posts.length === 0) {
       return NextResponse.json({ synced: 0, message: 'No posts from Behold' });
     }
 
-    // 2) Dropbox에 이미 저장된 파일 목록 (ID로 중복 확인)
     const existingFiles = await listFiles('/News/Instagram');
     const existingIds = new Set(
       existingFiles
@@ -49,33 +52,30 @@ export async function GET(request: Request) {
 
     let synced = 0;
 
-    // 3) 새 포스트만 저장
     for (const post of posts) {
       if (existingIds.has(post.id)) continue;
 
-      // 이미지 URL (VIDEO면 thumbnailUrl 사용)
-      const imgUrl = post.mediaType === 'VIDEO'
-        ? (post.thumbnailUrl ?? post.mediaUrl)
-        : post.mediaUrl;
+      // Behold CDN(안정) > thumbnailUrl > mediaUrl
+      const imgUrl =
+        post.sizes?.medium?.mediaUrl ??
+        post.sizes?.small?.mediaUrl ??
+        (post.mediaType === 'VIDEO' ? (post.thumbnailUrl ?? post.mediaUrl) : post.mediaUrl);
 
-      // 이미지 다운로드
       try {
         const imgRes = await fetch(imgUrl);
         if (imgRes.ok) {
           const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
-          const ext = imgUrl.split('?')[0].split('.').pop()?.toLowerCase() ?? 'jpg';
-          const safeExt = ['jpg', 'jpeg', 'png', 'webp'].includes(ext) ? ext : 'jpg';
-          await uploadToDropbox(`/News/Instagram/${post.id}.${safeExt}`, imgBuffer, 'image/jpeg');
+          await uploadToDropbox(`/News/Instagram/${post.id}.jpg`, imgBuffer, 'image/jpeg');
         }
       } catch (e) {
         console.error(`Image download failed for post ${post.id}:`, e);
       }
 
-      // 메타데이터 JSON 저장
+      // 아카이브 JSON: sizes.medium URL을 mediaUrl로 저장 (안정적 Behold CDN)
       const meta = {
         id: post.id,
         mediaType: post.mediaType,
-        mediaUrl: `/api/image?path=/News/Instagram/${post.id}.jpg`,
+        mediaUrl: post.sizes?.medium?.mediaUrl ?? `/api/image?path=/News/Instagram/${post.id}.jpg`,
         caption: post.caption,
         timestamp: post.timestamp,
         permalink: post.permalink,

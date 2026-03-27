@@ -2,6 +2,12 @@ import Image from 'next/image';
 
 export const dynamic = 'force-dynamic';
 
+interface BeholdSize {
+  mediaUrl: string;
+  height: number;
+  width: number;
+}
+
 interface Post {
   id: string;
   mediaType: 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM';
@@ -10,6 +16,7 @@ interface Post {
   caption?: string;
   timestamp: string;
   permalink: string;
+  sizes?: { small?: BeholdSize; medium?: BeholdSize; large?: BeholdSize; full?: BeholdSize };
 }
 
 async function getBeholdPosts(): Promise<Post[]> {
@@ -119,9 +126,11 @@ export default async function NewsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {allPosts.map((post) => {
-              const imgSrc = post.mediaType === 'VIDEO'
-                ? (post.thumbnailUrl ?? post.mediaUrl)
-                : post.mediaUrl;
+              // Behold CDN(안정) > thumbnailUrl > mediaUrl 순으로 사용
+              const imgSrc =
+                post.sizes?.medium?.mediaUrl ??
+                post.sizes?.small?.mediaUrl ??
+                (post.mediaType === 'VIDEO' ? (post.thumbnailUrl ?? post.mediaUrl) : post.mediaUrl);
               const date = new Date(post.timestamp).toLocaleDateString('ko-KR', {
                 year: 'numeric', month: 'long', day: 'numeric',
               });
