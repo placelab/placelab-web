@@ -71,7 +71,8 @@ export async function GET() {
       ok: beholdRes.ok,
       is_array: Array.isArray(parsed),
       length: Array.isArray(parsed) ? parsed.length : null,
-      raw_preview: beholdBody.slice(0, 200),
+      raw_preview: beholdBody.slice(0, 400),
+      posts_preview: Array.isArray(parsed) ? (parsed as unknown[])[0] : Array.isArray((parsed as Record<string, unknown>)?.posts) ? ((parsed as Record<string, unknown[]>).posts)[0] : null,
     };
   } catch (e) {
     result.behold = { error: String(e) };

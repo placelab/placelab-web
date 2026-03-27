@@ -20,7 +20,10 @@ async function getBeholdPosts(): Promise<Post[]> {
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    // Behold 위젯 응답: { posts: [...] } 또는 직접 배열
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.posts)) return data.posts;
+    return [];
   } catch {
     return [];
   }
