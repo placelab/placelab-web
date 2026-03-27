@@ -34,16 +34,6 @@ export default async function ProjectPage({ params }: Props) {
         ← {category === 'research' ? 'Research' : 'Design'}
       </Link>
 
-      {/* 제목 */}
-      <div className="max-w-3xl mb-10">
-        <h1 className="text-2xl md:text-3xl font-sans font-semibold text-lab-900 leading-tight">
-          {project.title}
-        </h1>
-        {project.subtitle && (
-          <p className="mt-2 text-lg text-lab-500">{project.subtitle}</p>
-        )}
-      </div>
-
       {/* 메인 이미지 */}
       {gallery[0] && (
         <div className="relative w-full bg-lab-100 rounded-sm overflow-hidden mb-10">
@@ -59,43 +49,37 @@ export default async function ProjectPage({ params }: Props) {
         </div>
       )}
 
-      {/* Abstract (00-abstract.docx HTML 또는 info.json 텍스트) */}
-      {abstract && (
-        <div className="max-w-3xl mb-6 prose prose-sm prose-stone max-w-none">
-          {abstract.startsWith('<')
-            ? <div dangerouslySetInnerHTML={{ __html: abstract }} />
-            : <p>{abstract}</p>
-          }
-        </div>
-      )}
+      {/* Abstract + Keywords/Team */}
+      <div className="max-w-3xl">
+        {/* Abstract */}
+        {abstract && (
+          <div className="prose prose-sm prose-stone max-w-none mb-8">
+            {abstract.startsWith('<')
+              ? <div dangerouslySetInnerHTML={{ __html: abstract }} />
+              : <p>{abstract}</p>
+            }
+          </div>
+        )}
 
-      {/* Team (design) 또는 Keywords (research) */}
-      {category === 'design' && project.team && project.team.members.length > 0 && (
-        <div className="max-w-3xl mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-lab-400 mb-4">Team</h2>
+        {/* Keywords (research) */}
+        {category === 'research' && project.keywords && project.keywords.length > 0 && (
+          <p className="text-sm text-lab-500">
+            {project.keywords.join(' · ')}
+          </p>
+        )}
+
+        {/* Team (design) */}
+        {category === 'design' && project.team && project.team.members.length > 0 && (
           <div className="space-y-1">
             {project.team.members.map((m, i) => (
-              <div key={i} className="flex gap-3 text-sm">
-                {m.role && <span className="text-lab-400 min-w-[180px]">{m.role}</span>}
-                {m.name && <span className="text-lab-700">{m.name}</span>}
+              <div key={i} className="flex gap-4 text-sm text-lab-500">
+                {m.role && <span className="min-w-[200px]">{m.role}</span>}
+                {m.name && <span>{m.name}</span>}
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {category === 'research' && project.keywords && project.keywords.length > 0 && (
-        <div className="max-w-3xl mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-lab-400 mb-4">Keywords</h2>
-          <div className="flex flex-wrap gap-2">
-            {project.keywords.map((kw, i) => (
-              <span key={i} className="text-sm px-3 py-1 bg-lab-100 text-lab-700 rounded-full">
-                {kw}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* 나머지 갤러리 이미지 */}
       {gallery.length > 1 && (
