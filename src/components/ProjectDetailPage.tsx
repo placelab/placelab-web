@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getProjectWithGallery } from '@/lib/dropbox';
+import { getProjectWithGallery, getProjects } from '@/lib/dropbox';
 
 interface Props {
   category: 'research' | 'design';
@@ -9,10 +9,17 @@ interface Props {
 }
 
 export default async function ProjectDetailPage({ category, slug }: Props) {
-  const result = await getProjectWithGallery(category, slug);
+  const [result, allProjects] = await Promise.all([
+    getProjectWithGallery(category, slug),
+    getProjects(category),
+  ]);
   if (!result) notFound();
 
   const { project, gallery, abstract } = result;
+
+  const currentIndex = allProjects.findIndex(p => p.slug === slug);
+  const prevProject = currentIndex > 0 ? allProjects[currentIndex - 1] : null;
+  const nextProject = currentIndex < allProjects.length - 1 ? allProjects[currentIndex + 1] : null;
 
   return (
     <div className="section-wrapper pt-28 pb-24">
@@ -94,6 +101,41 @@ export default async function ProjectDetailPage({ category, slug }: Props) {
               />
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 이전 / 다음 프로젝트 네비게이션 */}
+      {(prevProject || nextProject) && (
+        <div className="flex items-stretch justify-between gap-4 mt-20 pt-8 border-t border-lab-200">
+          {prevProject ? (
+            <Link
+              href={`/${category}/${prevProject.slug}`}
+              className="group flex items-center gap-3 text-left max-w-[45%]"
+            >
+              <span className="text-xl text-lab-400 group-hover:text-lab-900 transition-colors shrink-0">←</span>
+              <div>
+                <p className="text-xs text-lab-400 mb-0.5">Previous</p>
+                <p className="text-sm text-lab-700 group-hover:text-lab-900 transition-colors leading-snug line-clamp-2">
+                  {prevProject.title}
+                </p>
+              </div>
+            </Link>
+          ) : <div />}
+
+          {nextProject ? (
+            <Link
+              href={`/${category}/${nextProject.slug}`}
+              className="group flex items-center gap-3 text-right max-w-[45%] ml-auto"
+            >
+              <div>
+                <p className="text-xs text-lab-400 mb-0.5">Next</p>
+                <p className="text-sm text-lab-700 group-hover:text-lab-900 transition-colors leading-snug line-clamp-2">
+                  {nextProject.title}
+                </p>
+              </div>
+              <span className="text-xl text-lab-400 group-hover:text-lab-900 transition-colors shrink-0">→</span>
+            </Link>
+          ) : <div />}
         </div>
       )}
     </div>
