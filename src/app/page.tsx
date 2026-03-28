@@ -1,4 +1,4 @@
-import { getAllProjects, extractTags } from '@/lib/dropbox';
+import { getAllProjects, extractTags, getMembers } from '@/lib/dropbox';
 import ProjectGrid from '@/components/ProjectGrid';
 import FeaturedCarousel from '@/components/FeaturedCarousel';
 
@@ -6,7 +6,10 @@ export const revalidate = 3600;
 
 export default async function HomePage() {
   // getAllProjects()는 year 내림차순 정렬
-  const projects = await getAllProjects();
+  const [projects, { labIntro }] = await Promise.all([
+    getAllProjects(),
+    getMembers(),
+  ]);
   const tags = extractTags(projects);
 
   const featured = projects.slice(0, 5);
@@ -14,6 +17,16 @@ export default async function HomePage() {
 
   return (
     <section>
+      {/* ─── 연구실 소개 ─── */}
+      {labIntro && (
+        <div className="bg-lab-100">
+          <div
+            className="section-wrapper pt-24 pb-16 max-w-3xl prose prose-sm prose-stone"
+            dangerouslySetInnerHTML={{ __html: labIntro }}
+          />
+        </div>
+      )}
+
       {/* ─── 최근 프로젝트 3개 슬라이드쇼 ─── */}
       {featured.length > 0 && (
         <div className="pt-16">
