@@ -39,10 +39,10 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/70" />
 
         <div className="relative z-10 flex flex-col justify-end h-full section-wrapper pb-16 md:pb-24">
-          <h1 className="text-[6rem] md:text-[9rem] font-sans font-semibold text-white leading-none tracking-tight mb-4">
+          <h1 className="text-[5.1rem] md:text-[7.65rem] font-sans font-semibold text-white leading-none tracking-tight mb-4">
             placeLab
           </h1>
-          <p className="text-2xl md:text-4xl text-white/75 font-sans">
+          <p className="text-xl md:text-[1.9rem] text-white/75 font-sans">
             연세대학교 도시공학과 도시설계 연구실
           </p>
         </div>
