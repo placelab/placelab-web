@@ -1,23 +1,25 @@
 import Image from 'next/image';
-import { getAllProjects, extractTags, getProjects } from '@/lib/dropbox';
+import { getAllProjects, extractTags, listFiles, imageProxyUrl } from '@/lib/dropbox';
 import ProjectGrid from '@/components/ProjectGrid';
 import FeaturedCarousel from '@/components/FeaturedCarousel';
 
 export const revalidate = 3600;
 
 export default async function HomePage() {
-  const [projects, designProjects] = await Promise.all([
+  const [projects, heroFiles] = await Promise.all([
     getAllProjects(),
-    getProjects('design'),
+    listFiles('/Hero'),
   ]);
   const tags = extractTags(projects);
 
   const featured = projects.slice(0, 5);
   const rest = projects.slice(5);
 
-  // 디자인 프로젝트 썸네일 중 랜덤 1개를 히어로 배경으로
-  const thumbs = designProjects.map(p => p.thumbnail).filter(Boolean) as string[];
-  const heroBg = thumbs.length > 0 ? thumbs[Math.floor(Math.random() * thumbs.length)] : null;
+  // /Hero 폴더 이미지 중 랜덤 1개
+  const heroImages = heroFiles.filter(f => /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f));
+  const heroBg = heroImages.length > 0
+    ? imageProxyUrl(heroImages[Math.floor(Math.random() * heroImages.length)])
+    : null;
 
   return (
     <section>
@@ -29,18 +31,18 @@ export default async function HomePage() {
             alt="placeLab"
             fill
             unoptimized
-            className="object-cover opacity-50"
+            className="object-cover opacity-70"
             priority
           />
         )}
-        {/* 상→하 그라디언트 — 아래쪽 텍스트 가독성 */}
+        {/* 상→하 그라디언트 — 텍스트 가독성 */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/70" />
 
         <div className="relative z-10 flex flex-col justify-end h-full section-wrapper pb-16 md:pb-24">
-          <h1 className="text-5xl md:text-7xl font-sans font-semibold text-white leading-none tracking-tight mb-3">
+          <h1 className="text-[6rem] md:text-[9rem] font-sans font-semibold text-white leading-none tracking-tight mb-4">
             placeLab
           </h1>
-          <p className="text-base md:text-lg text-white/75 font-sans">
+          <p className="text-2xl md:text-4xl text-white/75 font-sans">
             연세대학교 도시공학과 도시설계 연구실
           </p>
         </div>
