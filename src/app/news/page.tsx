@@ -26,13 +26,20 @@ async function getDropboxToken(): Promise<string> {
   return process.env.DROPBOX_ACCESS_TOKEN ?? '';
 }
 
+/** non-ASCII(한글 등)를 유니코드 이스케이프로 변환 — Dropbox API 헤더 요구사항 */
+function toAsciiHeader(obj: unknown): string {
+  return JSON.stringify(obj).replace(/[\u0080-\uFFFF]/g, (c) =>
+    `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`
+  );
+}
+
 async function downloadJson<T>(token: string, path: string): Promise<T | null> {
   try {
     const res = await fetch('https://content.dropboxapi.com/2/files/download', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
-        'Dropbox-API-Arg': JSON.stringify({ path }),
+        'Dropbox-API-Arg': toAsciiHeader({ path }),
       },
       cache: 'no-store',
     });
